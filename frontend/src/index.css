@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .glass-card {
+    @apply bg-navy-900/80 backdrop-blur-xl border border-slate-800/80 shadow-2xl rounded-2xl;
+  }
+  .glass-card-hover {
+    @apply transition-all duration-300 hover:border-police-500/50 hover:shadow-police-500/10 hover:shadow-xl;
+  }
+  .glass-input {
+    @apply bg-slate-900/90 border border-slate-700/80 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-police-500/50 focus:border-police-500 transition-all duration-200;
+  }
+  .glass-button-primary {
+    @apply bg-gradient-to-r from-police-600 to-police-700 hover:from-police-500 hover:to-police-600 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-police-900/40 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Leaflet map height reset */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  border-radius: 1rem;
+  background-color: #0b1120 !important;
+  z-index: 10;
+}

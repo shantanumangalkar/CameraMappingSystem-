@@ -29,12 +29,12 @@ const ProtectedLayout = ({ children, allowedRoles }) => {
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} 
           isMobileSidebarOpen={isMobileSidebarOpen} 
         />
-        <div className="flex-1 flex overflow-visible relative">
+        <div className="flex-1 flex items-start overflow-visible relative">
           <Sidebar 
             isMobileOpen={isMobileSidebarOpen} 
             onCloseMobile={() => setIsMobileSidebarOpen(false)} 
           />
-          <main className="flex-1 p-4 md:p-8 flex items-center justify-center pb-24 md:pb-8">
+          <main className="flex-1 min-w-0 p-4 md:p-8 flex items-center justify-center pb-24 md:pb-8">
             <div className="mc-stadium max-w-md w-full p-6 md:p-8 text-center space-y-4 border-l-4 border-l-[#CF4500]">
               <ShieldAlert className="w-12 h-12 text-[#CF4500] mx-auto" />
               <div>
@@ -57,7 +57,7 @@ const ProtectedLayout = ({ children, allowedRoles }) => {
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} 
         isMobileSidebarOpen={isMobileSidebarOpen} 
       />
-      <div className="flex-1 flex overflow-visible relative">
+      <div className="flex-1 flex items-start overflow-visible relative">
         <Sidebar 
           isMobileOpen={isMobileSidebarOpen} 
           onCloseMobile={() => setIsMobileSidebarOpen(false)} 

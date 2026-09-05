@@ -34,15 +34,15 @@ export const Login = () => {
         <div className="flex items-center gap-2 max-w-[1800px] mx-auto w-full">
           <span className="font-semibold text-white">🇮🇳 Government of India</span>
           <span className="text-[#696969]">•</span>
-          <span className="text-[#D1CDC7]">Ministry of Home Affairs — National Police GIS Surveillance &amp; CCTNS Division</span>
+          <span className="text-[#D1CDC7]">National Police GIS &amp; CCTNS Command</span>
         </div>
       </div>
 
-      {/* Main 100% Full-Screen Edge-to-Edge Split Layout (Zero Leftover Space) */}
+      {/* Main 100% Full-Screen Edge-to-Edge Split Layout */}
       <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-68px)]">
         
         {/* ========================================================= */}
-        {/* LEFT COLUMN: 100% Full-Bleed Police Surveillance Visual   */}
+        {/* LEFT COLUMN: Clean Police Surveillance Visual & Concise Copy */}
         {/* ========================================================= */}
         <div className="lg:col-span-7 xl:col-span-8 relative min-h-[300px] sm:min-h-[380px] lg:min-h-full flex flex-col justify-between p-6 sm:p-10 lg:p-14 xl:p-16 overflow-hidden select-none bg-[#141413]">
           {/* Edge-to-edge high resolution command center photo */}
@@ -57,47 +57,47 @@ export const Login = () => {
 
           {/* Top Status Badge */}
           <div className="relative z-10 flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide bg-black/75 backdrop-blur-md text-white border border-white/20 shadow-md">
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide bg-black/75 backdrop-blur-md text-white border border-white/20 shadow-md">
               <span className="w-2 h-2 rounded-full bg-[#CF4500] animate-pulse"></span>
-              <span>LIVE POLICE GIS RADAR • OPERATIONAL</span>
+              <span>LIVE POLICE GIS RADAR</span>
             </span>
           </div>
 
-          {/* Bottom Editorial Intel Overlay */}
-          <div className="relative z-10 max-w-2xl space-y-3 pt-12 sm:pt-16 lg:pt-0 text-white">
+          {/* Bottom Concise Editorial Intel Overlay */}
+          <div className="relative z-10 max-w-xl space-y-2.5 pt-10 sm:pt-14 lg:pt-0 text-white">
             <div className="mc-eyebrow text-xs">
               <span className="w-2 h-2 rounded-full bg-[#F37338]"></span>
-              <span className="text-[#F37338] tracking-[+0.06em]">METROPOLITAN SURVEILLANCE INFRASTRUCTURE</span>
+              <span className="text-[#F37338] tracking-[+0.06em]">POLICE SURVEILLANCE &amp; MAPPING</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-medium tracking-[-0.02em] leading-tight text-white drop-shadow-md">
-              Forensic CCTV Mapping &amp; Crime Scene Reconnaissance
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium tracking-[-0.02em] leading-tight text-white drop-shadow-md">
+              CCTV Mapping &amp; Crime Reconnaissance
             </h1>
 
-            <p className="text-xs sm:text-sm text-[#D1CDC7] font-normal leading-relaxed max-w-xl drop-shadow-sm">
-              Centralized law enforcement geospatial intelligence platform connecting municipal and civilian CCTV nodes, field surveys, and live incident proximity trajectories.
+            <p className="text-xs sm:text-sm text-[#D1CDC7] font-normal leading-relaxed max-w-lg drop-shadow-sm">
+              Geospatial intelligence platform connecting municipal and private CCTV feeds for police investigations and rapid response.
             </p>
 
             {/* Feature Telemetry Pills */}
-            <div className="flex flex-wrap items-center gap-3 pt-2">
-              <div className="px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              <div className="px-3 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-1.5 shadow-sm">
                 <Target className="w-3.5 h-3.5 text-[#F37338]" />
-                <span>Crime Scene Proximity Radar</span>
+                <span>GIS Radar</span>
               </div>
-              <div className="px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2 shadow-sm">
+              <div className="px-3 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-1.5 shadow-sm">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-                <span>CCTNS Encrypted Protocol</span>
+                <span>Encrypted CCTNS</span>
               </div>
-              <div className="hidden sm:flex px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white items-center gap-2 shadow-sm">
+              <div className="hidden sm:flex px-3 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white items-center gap-1.5 shadow-sm">
                 <Video className="w-3.5 h-3.5 text-[#3860BE]" />
-                <span>24/7 CCTV Feed Evidentiary Log</span>
+                <span>Live CCTV Feeds</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* ========================================================= */}
-        {/* RIGHT COLUMN: 100% Full-Height Authentication Portal      */}
+        {/* RIGHT COLUMN: Authentication Portal                       */}
         {/* ========================================================= */}
         <div className="lg:col-span-5 xl:col-span-4 bg-[#FCFBFA] border-t lg:border-t-0 lg:border-l border-[#E5DFD9] flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 relative z-10">
           
@@ -106,10 +106,10 @@ export const Login = () => {
             CCTNS
           </div>
 
-          <div className="my-auto w-full max-w-md mx-auto space-y-6 relative z-10 py-6 lg:py-0">
+          <div className="my-auto w-full max-w-md mx-auto space-y-5 relative z-10 py-6 lg:py-0">
             {/* Official Police Department Shield Emblem & Header */}
             <div className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center shadow-mc-card mb-3.5 border border-[#E5DFD9] p-2.5 hover:scale-105 transition-transform">
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-white flex items-center justify-center shadow-mc-card mb-3 border border-[#E5DFD9] p-2 hover:scale-105 transition-transform">
                 <img 
                   src="/police-logo.png" 
                   alt="Police Department Emblem" 
@@ -119,14 +119,14 @@ export const Login = () => {
 
               <div className="mc-eyebrow justify-center text-[11px] mb-1">
                 <span className="mc-eyebrow-dot"></span>
-                <span>SURAKSHANET COMMAND</span>
+                <span>POLICE GIS PORTAL</span>
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-medium text-[#141413] tracking-[-0.02em]">
-                Police GIS Portal
+                Officer Login
               </h2>
-              <p className="text-xs text-[#696969] mt-1">
-                Authorized Law Enforcement Command Access Only
+              <p className="text-xs text-[#696969] mt-0.5">
+                Authorized Police Personnel Access
               </p>
             </div>
 

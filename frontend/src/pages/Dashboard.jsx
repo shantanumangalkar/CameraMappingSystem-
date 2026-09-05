@@ -187,17 +187,17 @@ export const Dashboard = () => {
         <div className="relative z-10 max-w-2xl space-y-2">
           <div className="mc-eyebrow">
             <span className="mc-eyebrow-dot"></span>
-            <span>POLICE RECONNAISSANCE &amp; MAPPING COMMAND</span>
+            <span>POLICE GIS COMMAND</span>
           </div>
 
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-[#141413] tracking-[-0.02em] leading-tight">
-            {isUserAdmin ? 'Metropolitan Police GIS Command Network' : 'Patrol CCTV Reconnaissance Live Deck'}
+            {isUserAdmin ? 'Police GIS Command Center' : 'Patrol CCTV Live Map'}
           </h1>
 
           <p className="text-sm md:text-base text-[#696969] font-normal leading-relaxed">
             {isUserAdmin 
-              ? 'Real-time CCTV camera telemetry, police precinct boundaries, incident trajectories, and field surveillance verification.'
-              : 'Real-time camera network reconnaissance, target crime scene radius mapping, and patrol orientation coverage.'}
+              ? 'Real-time CCTV telemetry, police precincts, and crime scene mapping.'
+              : 'Real-time CCTV camera reconnaissance and crime incident coverage.'}
           </p>
         </div>
 

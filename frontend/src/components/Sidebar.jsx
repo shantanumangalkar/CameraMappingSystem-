@@ -43,8 +43,8 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
   };
 
   const content = (
-    <div className="flex flex-col justify-between h-full p-4 sm:p-5 overflow-y-auto">
-      <div className="space-y-4">
+    <div className="flex flex-col justify-between h-full p-4 overflow-y-auto">
+      <div className="space-y-3.5">
         {/* Mobile Drawer Header with Logo & Close Toggle */}
         <div className="flex items-center justify-between md:hidden pb-3.5 border-b border-[#262627]">
           <div className="flex items-center gap-2.5">
@@ -106,7 +106,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
         </div>
 
         {/* Eyebrow Category */}
-        <div className="px-2 pt-1">
+        <div className="px-2 pt-0.5">
           <span className="text-[10px] font-bold tracking-[+0.06em] text-[#D1CDC7] uppercase flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#F37338]"></span>
             INVESTIGATION MODULES
@@ -114,7 +114,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
         </div>
 
         {/* Navigation Items in Stadium/Pill Shape */}
-        <nav className="flex flex-col gap-1.5">
+        <nav className="flex flex-col gap-1">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -123,7 +123,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
                 to={item.path}
                 onClick={onCloseMobile}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-full text-xs font-medium tracking-tight transition-all duration-150 ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-medium tracking-tight transition-all duration-150 ${
                     isActive
                       ? 'bg-white text-[#141413] font-bold shadow-md'
                       : 'text-[#D1CDC7] hover:text-white hover:bg-white/5'
@@ -146,14 +146,14 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
       </div>
 
       {/* Footer / Bottom Actions: Station precinct, Sign Out Button, and branding seal */}
-      <div className="space-y-3 pt-4 border-t border-[#262627]">
+      <div className="space-y-2.5 pt-3 border-t border-[#262627] shrink-0">
         {/* Desktop station indicator */}
-        <div className="hidden md:block px-3 py-2 rounded-[20px] bg-[#1C1C1A] border border-white/5 text-[11px] text-[#D1CDC7]">
+        <div className="hidden md:block px-3 py-1.5 rounded-[16px] bg-[#1C1C1A] border border-white/5 text-[11px] text-[#D1CDC7]">
           <div className="flex items-center gap-1.5 text-[10px] text-[#696969] uppercase font-semibold">
             <Building2 className="w-3 h-3 text-[#F37338]" />
             <span>Station Precinct</span>
           </div>
-          <p className="font-mono text-white truncate mt-0.5">{user?.policeStationName || 'Central Metropolitan HQ'}</p>
+          <p className="font-mono text-white text-xs truncate mt-0.5">{user?.policeStationName || 'Central Metropolitan HQ'}</p>
         </div>
 
         {/* PROMINENT LOGOUT / SIGN OUT BUTTON AT THE VERY BOTTOM */}
@@ -162,16 +162,16 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
             if (onCloseMobile) onCloseMobile();
             logout();
           }}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-[20px] bg-[#CF4500] hover:bg-[#B53C00] active:scale-[0.98] text-white font-semibold text-xs tracking-tight shadow-md transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3.5 rounded-[16px] bg-[#CF4500] hover:bg-[#B53C00] active:scale-[0.98] text-white font-semibold text-xs tracking-tight shadow-md transition-all cursor-pointer"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-3.5 h-3.5" />
           <span>Exit &amp; Sign Out</span>
         </button>
 
         {/* Official Seal */}
-        <div className="text-[#696969] px-2 space-y-0.5">
-          <p className="font-semibold text-[#D1CDC7] text-[11px] uppercase tracking-wider">CCTNS Police GIS</p>
-          <p className="text-[10px] font-mono">National Law Enforcement System</p>
+        <div className="text-[#696969] px-1 flex items-center justify-between text-[10px] font-mono">
+          <span className="text-[#A8A49E] font-medium">CCTNS POLICE GIS</span>
+          <span>v2.4 SECURE</span>
         </div>
       </div>
     </div>
@@ -179,8 +179,8 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
 
   return (
     <>
-      {/* Desktop Persistent Sticky Sidebar with Fixed Viewport Height */}
-      <aside className="w-64 bg-[#141413] hidden md:flex flex-col shrink-0 select-none sticky top-20 h-[calc(100vh-5.75rem)] max-h-[calc(100vh-5.75rem)] ml-4 lg:ml-6 rounded-[32px] shadow-mc-card overflow-hidden z-20">
+      {/* Desktop Persistent Sticky Sidebar with Fixed, Constant Height */}
+      <aside className="w-64 bg-[#141413] hidden md:flex flex-col shrink-0 select-none sticky top-20 self-start h-[520px] max-h-[calc(100vh-6rem)] ml-4 lg:ml-6 rounded-[28px] shadow-mc-card overflow-hidden z-20">
         {content}
       </aside>
 

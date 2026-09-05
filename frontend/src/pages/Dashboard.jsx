@@ -4,7 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { CameraMap } from '../components/CameraMap';
-import { Camera, CheckCircle, AlertTriangle, FileSearch, Building2, Eye, Activity, Navigation, Target } from 'lucide-react';
+import { 
+  Camera, 
+  CheckCircle, 
+  AlertTriangle, 
+  FileSearch, 
+  Building2, 
+  Eye, 
+  Navigation, 
+  Target, 
+  ArrowUpRight,
+  Info,
+  Shield,
+  Radio,
+  Clock
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Dashboard = () => {
@@ -16,8 +30,10 @@ export const Dashboard = () => {
 
   const [currentLocation, setCurrentLocation] = useState(null);
   const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [selectedCamera, setSelectedCamera] = useState(null);
+  const [showMapLegend, setShowMapLegend] = useState(false);
 
-  // Auto-fetch system GPS location by default on mount
+  // Auto-fetch system GPS location on mount
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -59,7 +75,7 @@ export const Dashboard = () => {
     refetchInterval: 10000,
   });
 
-  // Query Active Investigation Cases to link Crime Scene Target Pin on Dashboard Map
+  // Query Active Investigation Cases
   const { data: casesData } = useQuery({
     queryKey: ['dashboard-investigations'],
     queryFn: async () => {
@@ -78,7 +94,7 @@ export const Dashboard = () => {
             lng: Math.round(position.coords.longitude * 100000) / 100000,
           });
         },
-        (error) => {
+        () => {
           alert('GPS location capture failed. Map will display overall metropolitan CCTV network.');
         }
       );
@@ -90,7 +106,7 @@ export const Dashboard = () => {
   const stations = stationsData?.data?.content || stationsData?.data || [];
   const rawCases = casesData || [];
 
-  // Filter investigations: Admin sees all; Officer sees his assigned cases
+  // Filter investigations based on officer authorization
   const availableCases = rawCases.filter((c) => {
     if (isUserAdmin) return true;
     return (
@@ -100,102 +116,182 @@ export const Dashboard = () => {
     );
   });
 
-  // Selected Active Investigation Case Object
   const activeCase = availableCases.find((c) => c.id === selectedCaseId) || availableCases[0];
 
   const crimeLocationProps = activeCase?.latitude && activeCase?.longitude ? {
     lat: activeCase.latitude,
-    lng: activeCase.longitude
+    lng: activeCase.longitude,
+    name: `${activeCase.caseNumber} - ${activeCase.title}`
   } : null;
 
   const cards = [
-    { title: 'Total CCTV Cameras', value: stats.totalCameras || 0, icon: Camera, color: 'text-police-400', bg: 'from-police-600/20 to-police-900/10', path: '/cameras' },
-    { title: 'Active Live Stream', value: stats.activeCameras || 0, icon: Eye, color: 'text-emerald-400', bg: 'from-emerald-600/20 to-emerald-900/10', path: '/cameras' },
-    { title: 'Offline / Maintenance', value: stats.offlineCameras || 0, icon: AlertTriangle, color: 'text-rose-400', bg: 'from-rose-600/20 to-rose-900/10', path: '/cameras' },
-    { title: 'Pending Verification', value: stats.pendingVerificationCameras || 0, icon: CheckCircle, color: 'text-amber-400', bg: 'from-amber-600/20 to-amber-900/10', path: '/verification' },
-    { title: 'Active Investigations', value: stats.openCases || availableCases.length, icon: FileSearch, color: 'text-indigo-400', bg: 'from-indigo-600/20 to-indigo-900/10', path: '/investigations' },
-    { title: 'Police Stations', value: stats.totalPoliceStations || 0, icon: Building2, color: 'text-sky-400', bg: 'from-sky-600/20 to-sky-900/10', path: '/stations' },
+    { 
+      title: 'Total CCTV Cameras', 
+      value: stats.totalCameras || cameras.length || 0, 
+      icon: Camera, 
+      accent: 'bg-[#141413] text-[#FCFBFA]', 
+      path: '/cameras',
+      sublabel: 'Surveillance network'
+    },
+    { 
+      title: 'Active Live Stream', 
+      value: stats.activeCameras || cameras.filter(c => c.cameraStatus === 'ACTIVE').length || 0, 
+      icon: Eye, 
+      accent: 'bg-[#EAF7EE] text-[#0A7334]', 
+      path: '/cameras',
+      sublabel: 'Online & healthy'
+    },
+    { 
+      title: 'Offline / Maintenance', 
+      value: stats.offlineCameras || cameras.filter(c => c.cameraStatus === 'OFFLINE').length || 0, 
+      icon: AlertTriangle, 
+      accent: 'bg-[#FDF0EE] text-[#CF4500]', 
+      path: '/cameras',
+      sublabel: 'Requires attention'
+    },
+    { 
+      title: 'Pending Verification', 
+      value: stats.pendingVerificationCameras || 0, 
+      icon: CheckCircle, 
+      accent: 'bg-[#FEF6E9] text-[#B56708]', 
+      path: '/verification',
+      sublabel: 'Awaiting police review'
+    },
+    { 
+      title: 'Active Investigations', 
+      value: stats.openCases || availableCases.length, 
+      icon: FileSearch, 
+      accent: 'bg-[#EEF2FC] text-[#3860BE]', 
+      path: '/investigations',
+      sublabel: 'Active crime dossiers'
+    },
+    { 
+      title: 'Police Stations HQ', 
+      value: stats.totalPoliceStations || stations.length || 6, 
+      icon: Building2, 
+      accent: 'bg-[#F3F0EE] text-[#141413]', 
+      path: '/dashboard',
+      sublabel: 'Jurisdiction precincts'
+    },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-6 border-l-4 border-l-police-500">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            {isUserAdmin ? 'Central Command Center (Administrator)' : 'Police Patrol GIS Live Map'}
-            <Activity className="w-5 h-5 text-emerald-400 animate-pulse" />
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">
+    <div className="space-y-6 md:space-y-8">
+      {/* Top Police Command Stadium Banner */}
+      <div className="mc-stadium p-5 sm:p-7 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+        {/* Subtle Watermark Branding */}
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[100px] md:text-[140px] font-bold text-[#E8E2DA]/40 select-none pointer-events-none tracking-[-0.04em] pr-4">
+          POLICE GIS
+        </div>
+
+        <div className="relative z-10 max-w-2xl space-y-2">
+          <div className="mc-eyebrow">
+            <span className="mc-eyebrow-dot"></span>
+            <span>POLICE RECONNAISSANCE &amp; MAPPING COMMAND</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-[#141413] tracking-[-0.02em] leading-tight">
+            {isUserAdmin ? 'Metropolitan Police GIS Command Network' : 'Patrol CCTV Reconnaissance Live Deck'}
+          </h1>
+
+          <p className="text-sm md:text-base text-[#696969] font-normal leading-relaxed">
             {isUserAdmin 
-              ? 'Real-time geospatial CCTV tracking, police station headquarters, and active case analytics.'
-              : 'Real-time CCTV camera mapping, active crime scene targets, and patrol location tracking.'}
+              ? 'Real-time CCTV camera telemetry, police precinct boundaries, incident trajectories, and field surveillance verification.'
+              : 'Real-time camera network reconnaissance, target crime scene radius mapping, and patrol orientation coverage.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="relative z-10 flex flex-wrap items-center gap-3 shrink-0">
           <button
             onClick={handleFetchCurrentGPS}
-            className="px-3.5 py-1.5 rounded-xl bg-police-600/20 hover:bg-police-600/30 text-police-300 border border-police-500/30 font-bold text-xs flex items-center gap-1.5 transition-all"
+            className="mc-btn-primary"
           >
-            <Navigation className="w-4 h-4 text-police-400" />
-            My Current Location GPS
+            <Navigation className="w-4 h-4 text-[#F37338]" />
+            <span>My Current GPS</span>
           </button>
-
-          <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-emerald-400 font-bold">REAL-TIME GIS ACTIVE</span>
-          </div>
+          
+          <button
+            onClick={() => setShowMapLegend(!showMapLegend)}
+            className={`mc-btn-secondary ${showMapLegend ? 'bg-[#141413] text-[#FCFBFA]' : ''}`}
+          >
+            <Info className="w-4 h-4" />
+            <span>Map Legend</span>
+          </button>
         </div>
       </div>
 
-      {/* KPI Cards: VISIBLE TO ADMIN ONLY */}
+      {/* KPI Cards: 40px Stadium containers with circular tokens and satellite arrows */}
       {isUserAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
           {cards.map((card, idx) => {
             const Icon = card.icon;
             return (
               <motion.div
                 key={card.title}
-                initial={{ opacity: 0, y: 15 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
+                transition={{ delay: idx * 0.04 }}
                 onClick={() => card.path && navigate(card.path)}
-                className={`glass-card p-4 bg-gradient-to-b ${card.bg} border-slate-800/80 cursor-pointer hover:border-police-500/50 transition-all`}
+                className="mc-card p-4 sm:p-5 cursor-pointer hover:shadow-mc-elevated hover:border-[#D1CDC7] transition-all duration-200 flex flex-col justify-between group min-h-[148px]"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-400">{card.title}</span>
-                  <Icon className={`w-5 h-5 ${card.color}`} />
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-[#696969] tracking-[-0.01em] line-clamp-1">{card.title}</span>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${card.accent}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <p className="text-2xl sm:text-3xl font-medium text-[#141413] mt-3 tracking-[-0.02em]">
+                    {isStatsLoading ? '...' : card.value}
+                  </p>
                 </div>
-                <p className="text-2xl font-extrabold text-white mt-3">{isStatsLoading ? '...' : card.value}</p>
+
+                <div className="flex items-center justify-between pt-3 mt-2 border-t border-[#E5DFD9] text-[11px] text-[#696969]">
+                  <span className="truncate">{card.sublabel}</span>
+                  <div className="w-6 h-6 rounded-full bg-white border border-[#E5DFD9] flex items-center justify-center group-hover:bg-[#141413] group-hover:text-white transition-colors">
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </div>
+                </div>
               </motion.div>
             );
           })}
         </div>
       )}
 
-      {/* Live Map Section with Cameras, Active Investigations & Police Stations */}
-      <div className="glass-card p-5 h-[580px] flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-police-400" />
-            Live Police GIS Map (Active Investigations, Cameras & Police Stations)
-          </h3>
-
-          {/* Active Investigation Target Selector Dropdown */}
-          {availableCases.length > 0 && (
+      {/* Live Map Stadium Frame */}
+      <div className="mc-stadium p-4 sm:p-6 md:p-7 flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5DFD9] pb-4">
+          <div className="space-y-1">
+            <div className="mc-eyebrow">
+              <span className="mc-eyebrow-dot"></span>
+              <span>GEOSPATIAL RADAR NETWORK</span>
+            </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-rose-400 font-bold flex items-center gap-1">
-                <Target className="w-3.5 h-3.5" /> Investigation Focus:
+              <h2 className="text-lg md:text-xl font-medium text-[#141413] tracking-[-0.02em]">
+                Metropolitan CCTV &amp; Police Precinct Infrastructure
+              </h2>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-white text-[#141413] border border-[#D1CDC7]">
+                {cameras.length} nodes online
+              </span>
+            </div>
+          </div>
+
+          {/* Incident Target Focus Dropdown */}
+          {availableCases.length > 0 && (
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-xs text-[#CF4500] font-bold flex items-center gap-1 shrink-0 uppercase tracking-wider">
+                <Target className="w-4 h-4 text-[#CF4500]" /> Crime Target:
               </span>
               <select
                 value={activeCase?.id || ''}
                 onChange={(e) => setSelectedCaseId(Number(e.target.value))}
-                className="bg-slate-900 text-slate-200 border border-rose-500/40 text-xs rounded-lg px-2.5 py-1 font-semibold focus:outline-none focus:border-rose-400"
+                aria-label="Filter Map By Crime Target"
+                className="mc-input text-xs py-2 px-3 font-medium border-[#D1CDC7] text-[#141413] focus:border-[#141413] w-full sm:w-auto max-w-xs"
               >
                 {availableCases.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.caseNumber} - {c.title} ({c.policeStationName || 'Station HQ'})
+                    {c.caseNumber} - {c.title}
                   </option>
                 ))}
               </select>
@@ -203,13 +299,51 @@ export const Dashboard = () => {
           )}
         </div>
 
-        <div className="flex-1 w-full relative">
+        {/* Map Legend Banner (Collapsible) */}
+        {showMapLegend && (
+          <motion.div 
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 rounded-[20px] bg-white border border-[#E5DFD9] text-xs flex flex-wrap items-center gap-4 sm:gap-6 text-[#141413]"
+          >
+            <span className="font-bold text-[11px] uppercase tracking-wider text-[#696969]">Legend:</span>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#10B981]"></span>
+              <span className="font-medium">Active CCTV</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#CF4500]"></span>
+              <span className="font-medium">Offline CCTV</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#F59E0B]"></span>
+              <span className="font-medium">Pending Survey</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <img src="/police-station-marker.png" alt="Police Station HQ" className="w-3.5 h-4 object-contain shrink-0" />
+              <span className="font-medium">Police Station HQ</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#CF4500] ring-2 ring-[#F37338]"></span>
+              <span className="font-medium">Crime Target (FIR)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-0.5 border-t-2 border-dashed border-[#F37338]"></span>
+              <span className="font-medium">Investigation Radar Trajectory</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Leaflet Map in 40px Stadium Container Frame */}
+        <div className="h-[420px] sm:h-[500px] md:h-[620px] w-full relative rounded-[28px] sm:rounded-[36px] md:rounded-[40px] overflow-hidden border border-[#E5DFD9] shadow-mc-card bg-[#F3F0EE]">
           <CameraMap 
             cameras={cameras} 
             stations={stations}
             crimeLocation={crimeLocationProps}
             searchRadius={activeCase?.searchRadiusMeters || 500}
             selectedLocation={currentLocation}
+            selectedCameraId={selectedCamera?.id}
+            onSelectCamera={(cam) => setSelectedCamera(cam)}
             autoFit={true} 
           />
         </div>

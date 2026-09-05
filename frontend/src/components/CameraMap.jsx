@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, useMap, useMapEvents } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useAuth } from '../context/AuthContext';
-import { Camera, Shield, Eye, AlertTriangle, QrCode, MapPin, Navigation, Compass, User, Phone, Lock, Building2 } from 'lucide-react';
+import { Camera, Shield, Eye, AlertTriangle, MapPin, Navigation, Compass, User, Phone, Lock, Building2, Radio, ArrowRight } from 'lucide-react';
 
 // Helper to generate coordinates for a Field-of-View (FOV) sector wedge
 const getFovPolygonCoordinates = (lat, lon, directionAngle = 0, radiusMeters = 80, fovAngleDegrees = 60) => {
@@ -26,88 +26,161 @@ const getFovPolygonCoordinates = (lat, lon, directionAngle = 0, radiusMeters = 8
   return points;
 };
 
-// Custom SVG Marker for Police Station Headquarters
+// Official Police Station Pin Marker
 const createPoliceStationIcon = () => {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="44" height="44">
-      <circle cx="20" cy="20" r="18" fill="#1e40af" fill-opacity="0.3" stroke="#2563eb" stroke-width="2.5"/>
-      <rect x="11" y="14" width="18" height="14" rx="2" fill="#1d4ed8" stroke="#ffffff" stroke-width="1.5"/>
-      <polygon points="20,7 31,14 9,14" fill="#1e40af"/>
-      <path d="M20 17L22.5 21L27 21.5L23.5 24.5L24.5 29L20 26.5L15.5 29L16.5 24.5L13 21.5L17.5 21Z" fill="#fbbf24"/>
-    </svg>
+  const html = `
+    <div class="relative flex items-center justify-center filter drop-shadow-md hover:scale-110 transition-transform cursor-pointer">
+      <img 
+        src="/police-station-marker.png" 
+        alt="Police Station Precinct" 
+        class="w-[38px] h-[44px] object-contain drop-shadow-sm" 
+      />
+    </div>
   `;
 
   return L.divIcon({
-    html: svg,
-    className: 'police-station-icon',
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
+    html: html,
+    className: 'police-station-marker-pin',
+    iconSize: [38, 44],
+    iconAnchor: [19, 44],
+    popupAnchor: [0, -44],
   });
 };
 
-// Custom SVG Markers for Camera Status with Orientation Arrow
-const createCameraIcon = (status, verificationStatus, directionAngle = 0) => {
-  let color = '#10b981'; // Green for Active & Approved
-  if (status === 'OFFLINE') color = '#ef4444'; // Red
-  if (status === 'UNDER_MAINTENANCE' || verificationStatus === 'PENDING') color = '#f59e0b'; // Amber for Pending
+// Custom SVG Marker for Camera Node with Rotating Direction Arrow & Satellite Circle
+const createCameraIcon = (status, verificationStatus, directionAngle = 0, isSelected = false) => {
+  let color = '#10B981'; // Green for Active
+  if (status === 'OFFLINE' || verificationStatus === 'REJECTED') color = '#CF4500'; // Signal Orange / Red
+  if (status === 'UNDER_MAINTENANCE' || verificationStatus === 'PENDING') color = '#F79E1B'; // Amber
 
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="40" height="40">
-      <!-- Outer Direction Ring with Arrow -->
-      <g transform="rotate(${directionAngle}, 18, 18)">
-        <polygon points="18,2 23,10 13,10" fill="${color}"/>
-        <circle cx="18" cy="18" r="14" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="3 2"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${isSelected ? '46' : '38'}" height="${isSelected ? '46' : '38'}">
+      ${isSelected ? `<circle cx="20" cy="20" r="19" fill="none" stroke="#141413" stroke-width="2.5" stroke-dasharray="3 2"/>` : ''}
+      <!-- Direction Indicator Arrow -->
+      <g transform="rotate(${directionAngle}, 20, 20)">
+        <polygon points="20,2 25,11 15,11" fill="${color}"/>
+        <circle cx="20" cy="20" r="14" fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="0.7"/>
       </g>
-      <!-- Center Camera Node -->
-      <circle cx="18" cy="18" r="9" fill="${color}" fill-opacity="0.3" stroke="${color}" stroke-width="2.5"/>
-      <circle cx="18" cy="18" r="5" fill="${color}"/>
-      ${verificationStatus === 'PENDING' ? '<circle cx="25" cy="11" r="4" fill="#f59e0b" stroke="#ffffff" stroke-width="1"/>' : ''}
+      <!-- Center Camera Hub -->
+      <circle cx="20" cy="20" r="9" fill="#FFFFFF" stroke="#141413" stroke-width="2"/>
+      <circle cx="20" cy="20" r="5" fill="${color}"/>
+      ${verificationStatus === 'PENDING' ? '<circle cx="27" cy="13" r="3.5" fill="#F79E1B" stroke="#FFFFFF" stroke-width="1"/>' : ''}
+    </svg>
+  `;
+
+  const size = isSelected ? 46 : 38;
+  return L.divIcon({
+    html: svg,
+    className: 'custom-camera-marker',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+};
+
+// Crime Scene Pin: Ink Black & Signal Orange Target
+const createCrimeSceneIcon = () => {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44" width="46" height="46">
+      <circle cx="22" cy="22" r="20" fill="#CF4500" fill-opacity="0.2" stroke="#CF4500" stroke-width="2.5"/>
+      <circle cx="22" cy="22" r="12" fill="#141413"/>
+      <polygon points="22,7 26,16 35,17 28,24 30,33 22,28 14,33 16,24 9,17 18,16" fill="#F37338"/>
+      <circle cx="22" cy="22" r="3" fill="#FFFFFF"/>
     </svg>
   `;
 
   return L.divIcon({
     html: svg,
-    className: 'custom-camera-icon',
+    className: 'crime-scene-marker',
+    iconSize: [46, 46],
+    iconAnchor: [23, 23],
+  });
+};
+
+// Live GPS Marker
+const createLiveGpsIcon = () => {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+      <circle cx="20" cy="20" r="16" fill="#141413" fill-opacity="0.2" stroke="#141413" stroke-width="2"/>
+      <circle cx="20" cy="20" r="9" fill="#141413"/>
+      <circle cx="20" cy="20" r="3.5" fill="#F37338"/>
+    </svg>
+  `;
+
+  return L.divIcon({
+    html: svg,
+    className: 'live-gps-marker',
     iconSize: [40, 40],
     iconAnchor: [20, 20],
   });
 };
 
-const createCrimeSceneIcon = () => {
+// Dedicated Map Picker Target Pin Icon
+const createPickerPinIcon = () => {
   const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="48" height="48">
-      <circle cx="20" cy="20" r="18" fill="#dc2626" fill-opacity="0.25" stroke="#dc2626" stroke-width="3"/>
-      <circle cx="20" cy="20" r="10" fill="#dc2626" fill-opacity="0.4"/>
-      <path d="M20 6L24 14L32 15L26 21L27 29L20 25L13 29L14 21L8 15L16 14L20 6Z" fill="#ef4444"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 46 46" width="46" height="46">
+      <circle cx="23" cy="23" r="18" fill="#CF4500" fill-opacity="0.25">
+        <animate attributeName="r" values="14;22;14" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="fill-opacity" values="0.35;0.08;0.35" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="23" cy="23" r="10" fill="#141413" stroke="#FFFFFF" stroke-width="2.5"/>
+      <circle cx="23" cy="23" r="4.5" fill="#CF4500"/>
+      <!-- Crosshairs -->
+      <line x1="23" y1="3" x2="23" y2="10" stroke="#CF4500" stroke-width="2" stroke-linecap="round"/>
+      <line x1="23" y1="36" x2="23" y2="43" stroke="#CF4500" stroke-width="2" stroke-linecap="round"/>
+      <line x1="3" y1="23" x2="10" y2="23" stroke="#CF4500" stroke-width="2" stroke-linecap="round"/>
+      <line x1="36" y1="23" x2="43" y2="23" stroke="#CF4500" stroke-width="2" stroke-linecap="round"/>
     </svg>
   `;
 
   return L.divIcon({
     html: svg,
-    className: 'crime-scene-icon',
-    iconSize: [48, 48],
-    iconAnchor: [24, 24],
+    className: 'picker-target-pin',
+    iconSize: [46, 46],
+    iconAnchor: [23, 23],
   });
 };
 
-const createLiveGpsIcon = () => {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="44" height="44">
-      <circle cx="20" cy="20" r="18" fill="#3b82f6" fill-opacity="0.3" stroke="#2563eb" stroke-width="2.5"/>
-      <circle cx="20" cy="20" r="10" fill="#2563eb"/>
-      <circle cx="20" cy="20" r="4" fill="#ffffff"/>
-    </svg>
-  `;
+// Invalidate Leaflet map size on mount and container layout change
+const MapInvalidator = () => {
+  const map = useMap();
 
-  return L.divIcon({
-    html: svg,
-    className: 'live-gps-icon',
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-  });
+  useEffect(() => {
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 120);
+    const t2 = setTimeout(() => map.invalidateSize(), 350);
+    const t3 = setTimeout(() => map.invalidateSize(), 700);
+
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    const container = map.getContainer();
+    if (container) {
+      resizeObserver.observe(container);
+    }
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      resizeObserver.disconnect();
+    };
+  }, [map]);
+
+  return null;
 };
 
-// Auto-adjust map viewport bounds smoothly to crimeLocation, target GPS, or cameras
+// Auto pan to newly picked location
+const MapPanToSelected = ({ selectedLocation, active }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (active && selectedLocation?.lat && selectedLocation?.lng) {
+      map.panTo([selectedLocation.lat, selectedLocation.lng], { animate: true, duration: 0.5 });
+    }
+  }, [selectedLocation?.lat, selectedLocation?.lng, active, map]);
+  return null;
+};
+
+// Auto-adjust map viewport
 const AutoBounds = ({ cameras, stations, crimeLocation, selectedLocation, autoFit }) => {
   const map = useMap();
 
@@ -126,12 +199,20 @@ const AutoBounds = ({ cameras, stations, crimeLocation, selectedLocation, autoFi
   return null;
 };
 
-// Map click listener for setting coordinates in Add Camera modal
+// Map click listener that supports all caller argument signatures safely
 const MapClickListener = ({ onMapClick }) => {
   useMapEvents({
     click(e) {
       if (onMapClick) {
-        onMapClick(e.latlng.lat, e.latlng.lng);
+        const lat = Math.round(e.latlng.lat * 100000) / 100000;
+        const lng = Math.round(e.latlng.lng * 100000) / 100000;
+        const locObj = { lat, lng, latitude: lat, longitude: lng };
+        try {
+          // Pass (lat, lng, locObj) so both fn(lat, lng) and fn(locObj) work seamlessly
+          onMapClick(lat, lng, locObj);
+        } catch (err) {
+          console.error('onMapClick handler error:', err);
+        }
       }
     },
   });
@@ -148,6 +229,7 @@ export const CameraMap = ({
   onSelectCamera,
   onMapClick,
   selectedLocation = null,
+  selectedCameraId = null,
   interactivePicker = false,
   autoFit = true
 }) => {
@@ -155,25 +237,13 @@ export const CameraMap = ({
   const userRole = typeof user?.role === 'object' ? user?.role?.name : user?.role;
   const isSurveyor = userRole === 'ROLE_SURVEY_PERSON';
 
-  // Pan-India Police Stations across major metropolitan cities
   const defaultStations = stations.length > 0 ? stations : [
     { id: 101, stationCode: 'PS-DEL-01', stationName: 'Delhi Police Central HQ (ITO)', latitude: 28.6280, longitude: 77.2410, address: 'ITO, New Delhi', contactNumber: '+91-11-23490000', jurisdictionZone: 'Central Delhi' },
     { id: 102, stationCode: 'PS-DEL-02', stationName: 'Connaught Place Police Station', latitude: 28.6328, longitude: 77.2197, address: 'Parliament Street, New Delhi', contactNumber: '+91-11-23340000', jurisdictionZone: 'NDMC Zone' },
     { id: 103, stationCode: 'PS-MUM-01', stationName: 'Mumbai City Police Commissionerate HQ', latitude: 18.9452, longitude: 72.8336, address: 'Crawford Market, Fort, Mumbai', contactNumber: '+91-22-22620111', jurisdictionZone: 'Greater Mumbai' },
-    { id: 104, stationCode: 'PS-MUM-02', stationName: 'Bandra Police Station HQ', latitude: 19.0596, longitude: 72.8295, address: 'Bandra West, Mumbai', contactNumber: '+91-22-26422000', jurisdictionZone: 'Western Suburbs' },
-    { id: 105, stationCode: 'PS-BLR-01', stationName: 'Bengaluru City Police Commissionerate', latitude: 12.9818, longitude: 77.5975, address: 'Infantry Road, Bengaluru', contactNumber: '+91-80-22942222', jurisdictionZone: 'Bengaluru Urban' },
-    { id: 106, stationCode: 'PS-BLR-02', stationName: 'Electronic City Police Station', latitude: 12.8452, longitude: 77.6602, address: 'Electronic City, Bengaluru', contactNumber: '+91-80-22943300', jurisdictionZone: 'Tech Corridor' },
-    { id: 107, stationCode: 'PS-HYD-01', stationName: 'Hyderabad City Police Commissionerate', latitude: 17.3985, longitude: 78.4746, address: 'Basheerbagh, Hyderabad', contactNumber: '+91-40-27852435', jurisdictionZone: 'Hyderabad Urban' },
-    { id: 108, stationCode: 'PS-HYD-02', stationName: 'Cyberabad Police HQ', latitude: 17.4401, longitude: 78.3489, address: 'Gachibowli, Hyderabad', contactNumber: '+91-40-27853400', jurisdictionZone: 'Cyberabad IT Zone' },
-    { id: 109, stationCode: 'PS-KOL-01', stationName: 'Lalbazar Kolkata Police HQ', latitude: 22.5726, longitude: 88.3512, address: 'BBD Bagh, Kolkata', contactNumber: '+91-33-22143000', jurisdictionZone: 'Kolkata Metro' },
-    { id: 110, stationCode: 'PS-CHE-01', stationName: 'Greater Chennai Police Commissionerate', latitude: 13.0878, longitude: 80.2642, address: 'Vepery, Chennai', contactNumber: '+91-44-23452320', jurisdictionZone: 'Chennai Central' },
-    { id: 111, stationCode: 'PS-AMD-01', stationName: 'Ahmedabad City Police HQ', latitude: 23.0524, longitude: 72.5935, address: 'Shahibaug, Ahmedabad', contactNumber: '+91-79-25630100', jurisdictionZone: 'Ahmedabad Metro' },
-    { id: 112, stationCode: 'PS-JAI-01', stationName: 'Jaipur Police Commissionerate HQ', latitude: 26.9157, longitude: 75.8110, address: 'MI Road, Jaipur', contactNumber: '+91-141-2373000', jurisdictionZone: 'Jaipur Urban' },
-    { id: 113, stationCode: 'PS-NGP-01', stationName: 'Nagpur Police Commissionerate HQ', latitude: 21.1524, longitude: 79.0801, address: 'Civil Lines, Nagpur', contactNumber: '+91-712-2560300', jurisdictionZone: 'Nagpur City HQ' },
-    { id: 114, stationCode: 'PS-NGP-02', stationName: 'Sitabuldi Police Station', latitude: 21.1458, longitude: 79.0882, address: 'Main Road, Sitabuldi, Nagpur', contactNumber: '+91-712-2522000', jurisdictionZone: 'Central Nagpur' },
-    { id: 115, stationCode: 'PS-NGP-03', stationName: 'Sadar Police Station', latitude: 21.1620, longitude: 79.0780, address: 'Sadar Bazaar, Nagpur', contactNumber: '+91-712-2531000', jurisdictionZone: 'North Nagpur' },
-    { id: 116, stationCode: 'PS-NGP-04', stationName: 'Ambazari Police Station', latitude: 21.1350, longitude: 79.0550, address: 'Ambazari, Nagpur', contactNumber: '+91-712-2542000', jurisdictionZone: 'West Nagpur' },
-    { id: 117, stationCode: 'PS-NGP-05', stationName: 'Dharampeth Police Station', latitude: 21.1410, longitude: 79.0680, address: 'Dharampeth, Nagpur', contactNumber: '+91-712-2553000', jurisdictionZone: 'Dharampeth Hub' }
+    { id: 104, stationCode: 'PS-BLR-01', stationName: 'Bengaluru City Police Commissionerate', latitude: 12.9818, longitude: 77.5975, address: 'Infantry Road, Bengaluru', contactNumber: '+91-80-22942222', jurisdictionZone: 'Bengaluru Urban' },
+    { id: 105, stationCode: 'PS-NGP-01', stationName: 'Nagpur Police Commissionerate HQ', latitude: 21.1524, longitude: 79.0801, address: 'Civil Lines, Nagpur', contactNumber: '+91-712-2560300', jurisdictionZone: 'Nagpur City HQ' },
+    { id: 106, stationCode: 'PS-NGP-02', stationName: 'Sitabuldi Police Station', latitude: 21.1458, longitude: 79.0882, address: 'Main Road, Sitabuldi, Nagpur', contactNumber: '+91-712-2522000', jurisdictionZone: 'Central Nagpur' }
   ];
 
   const isValidLat = (val) => typeof val === 'number' && !isNaN(val) && val >= -90 && val <= 90;
@@ -187,7 +257,7 @@ export const CameraMap = ({
   const validCrimeLoc = crimeLocation && isValidLat(crimeLocation.lat) && isValidLng(crimeLocation.lng) ? crimeLocation : null;
 
   return (
-    <div className="w-full h-full min-h-[450px] relative rounded-2xl overflow-hidden shadow-2xl border border-slate-800">
+    <div className={`w-full h-full ${interactivePicker ? 'min-h-[220px] cursor-crosshair' : 'min-h-[340px]'} relative rounded-[28px] sm:rounded-[36px] overflow-hidden border border-[#E5DFD9] shadow-mc-card bg-[#F3F0EE]`}>
       <MapContainer 
         center={safeCenter} 
         zoom={zoom} 
@@ -195,9 +265,13 @@ export const CameraMap = ({
         className="w-full h-full"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
+
+        {/* Dynamic viewport & size recalculations */}
+        <MapInvalidator />
+        <MapPanToSelected selectedLocation={validSelectedLoc} active={interactivePicker} />
 
         <AutoBounds 
           cameras={cameras} 
@@ -209,29 +283,40 @@ export const CameraMap = ({
 
         {interactivePicker && <MapClickListener onMapClick={onMapClick} />}
 
-        {/* Live GPS Patrol Location Marker & Blue Pulsing Proximity Circle */}
+        {/* Selected / Live Patrol Location Marker */}
         {validSelectedLoc && (
           <>
-            <Marker position={[validSelectedLoc.lat, validSelectedLoc.lng]} icon={createLiveGpsIcon()}>
+            <Marker 
+              position={[validSelectedLoc.lat, validSelectedLoc.lng]} 
+              icon={interactivePicker ? createPickerPinIcon() : createLiveGpsIcon()}
+            >
               <Popup>
-                <div className="p-1.5 text-blue-950 text-xs font-bold space-y-1">
-                  <div className="flex items-center gap-1.5 text-blue-700 font-mono text-[11px] border-b pb-1">
-                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                    📡 LIVE GPS PATROL LOCATION
+                <div className="p-3 text-[#141413] text-xs font-semibold space-y-1.5 min-w-[210px]">
+                  <div className="flex items-center gap-1.5 text-[#141413] font-mono text-[11px] font-bold border-b border-[#E5DFD9] pb-1">
+                    <span className={`w-2 h-2 rounded-full ${interactivePicker ? 'bg-[#CF4500]' : 'bg-[#F37338]'} animate-ping`}></span>
+                    <span>{interactivePicker ? 'SELECTED REGISTRATION POINT' : 'PATROL GPS LOCATION'}</span>
                   </div>
-                  <p>Coords: {validSelectedLoc.lat.toFixed(5)}, {validSelectedLoc.lng.toFixed(5)}</p>
+                  <p className="text-[#696969] font-mono text-[11px] leading-relaxed">
+                    Lat: <span className="text-[#141413] font-bold">{validSelectedLoc.lat.toFixed(5)}</span><br/>
+                    Lng: <span className="text-[#141413] font-bold">{validSelectedLoc.lng.toFixed(5)}</span>
+                  </p>
+                  {interactivePicker && (
+                    <p className="text-[10px] text-[#CF4500] font-sans font-semibold pt-0.5">
+                      ✓ Location locked (Click anywhere to relocate)
+                    </p>
+                  )}
                 </div>
               </Popup>
             </Marker>
             <Circle
               center={[validSelectedLoc.lat, validSelectedLoc.lng]}
-              radius={250}
+              radius={interactivePicker ? 60 : 250}
               pathOptions={{
-                color: '#2563eb',
-                fillColor: '#3b82f6',
-                fillOpacity: 0.2,
-                weight: 2.5,
-                dashArray: '6, 6'
+                color: interactivePicker ? '#CF4500' : '#141413',
+                fillColor: interactivePicker ? '#CF4500' : '#141413',
+                fillOpacity: interactivePicker ? 0.12 : 0.08,
+                weight: 2,
+                dashArray: '4, 4'
               }}
             />
           </>
@@ -248,34 +333,32 @@ export const CameraMap = ({
               icon={createPoliceStationIcon()}
             >
               <Popup>
-                <div className="p-2.5 text-slate-900 min-w-[250px]">
-                  <div className="flex items-center justify-between border-b pb-1.5 mb-2">
-                    <span className="font-bold text-blue-900 font-mono text-xs flex items-center gap-1">
-                      <Building2 className="w-3.5 h-3.5 text-blue-700" />
+                <div className="p-3.5 text-[#141413] min-w-[260px] space-y-2">
+                  <div className="flex items-center justify-between border-b border-[#E5DFD9] pb-1.5">
+                    <span className="font-bold text-[#141413] font-mono text-xs flex items-center gap-1.5">
+                      <img src="/police-station-marker.png" alt="Police Precinct" className="w-4 h-4 object-contain shrink-0" />
                       {st.stationCode}
                     </span>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono">
-                      🇮🇳 CCTNS VERIFIED
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-[#EAF7EE] text-[#0A7334] border border-[#BDE7CA] font-mono">
+                      CCTNS VERIFIED
                     </span>
                   </div>
 
-                  <p className="font-bold text-sm leading-tight text-blue-950">{st.stationName}</p>
-                  <p className="text-xs text-slate-600 mt-1 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    {st.address || st.jurisdictionZone || 'Metropolitan Station'}
-                  </p>
+                  <div>
+                    <h4 className="font-bold text-sm text-[#141413] leading-snug">{st.stationName}</h4>
+                    <p className="text-xs text-[#696969] mt-0.5 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-[#9A3A0A] shrink-0" />
+                      {st.address || st.jurisdictionZone || 'Metropolitan Station'}
+                    </p>
+                  </div>
 
-                  <div className="mt-2 p-2 rounded-lg bg-blue-50 border border-blue-200 text-xs space-y-1">
-                    <p className="text-[10px] text-blue-900 font-semibold flex justify-between">
-                      <span>CCTNS ID:</span>
-                      <span className="font-mono font-bold">{st.cctnsStationId || `CCTNS-${st.stationCode}`}</span>
+                  <div className="p-2.5 rounded-[16px] bg-[#F3F0EE] border border-[#E5DFD9] text-xs space-y-1">
+                    <p className="text-[11px] text-[#696969] flex justify-between">
+                      <span>Jurisdiction:</span>
+                      <strong className="text-[#141413]">{st.jurisdictionZone || 'Central Zone'}</strong>
                     </p>
-                    <p className="text-[10px] text-slate-700 flex justify-between">
-                      <span>State Bureau:</span>
-                      <strong>{st.stateBureau || 'State Police Bureau'}</strong>
-                    </p>
-                    <p className="font-semibold text-blue-900 flex items-center gap-1 font-mono pt-1 border-t border-blue-200">
-                      <Phone className="w-3.5 h-3.5 text-blue-700" />
+                    <p className="font-semibold text-[#141413] flex items-center gap-1 font-mono pt-1 border-t border-[#E5DFD9] text-[11px]">
+                      <Phone className="w-3.5 h-3.5 text-[#CF4500]" />
                       Helpline: <strong>{st.contactNumber || '+91 11 100'}</strong>
                     </p>
                   </div>
@@ -285,19 +368,20 @@ export const CameraMap = ({
           );
         })}
 
-        {/* Crime Scene Location & Proximity Search Radius Circle */}
+        {/* Crime Scene Location, Radius, and Connective Orbital Trajectory Lines */}
         {validCrimeLoc && (
           <>
             <Marker position={[validCrimeLoc.lat, validCrimeLoc.lng]} icon={createCrimeSceneIcon()}>
               <Popup>
-                <div className="p-2.5 text-slate-900 font-medium">
-                  <p className="font-bold text-red-600 flex items-center gap-1 text-sm">
-                    🚨 CRIME SCENE LOCATION
+                <div className="p-3 text-[#141413] min-w-[220px] space-y-1.5">
+                  <p className="font-bold text-[#CF4500] flex items-center gap-1 text-xs uppercase tracking-wider">
+                    <span className="w-2 h-2 rounded-full bg-[#CF4500]"></span>
+                    Crime Scene Incident Target
                   </p>
-                  <p className="text-xs text-slate-700 font-semibold mt-1">{validCrimeLoc.name || 'Active Incident'}</p>
-                  <p className="text-[11px] text-slate-500 font-mono">Coords: {validCrimeLoc.lat}, {validCrimeLoc.lng}</p>
-                  <p className="text-[10px] text-red-600 font-bold mt-1 bg-red-50 p-1 rounded border border-red-200">
-                    Auto Radius Detection: {searchRadius}m
+                  <p className="text-sm font-semibold text-[#141413]">{validCrimeLoc.name || 'Incident Focal Point'}</p>
+                  <p className="text-[11px] text-[#696969] font-mono">Coords: {validCrimeLoc.lat}, {validCrimeLoc.lng}</p>
+                  <p className="text-[11px] text-[#CF4500] font-bold bg-[#FDF0EE] p-1.5 rounded-full border border-[#F8C6BC] text-center">
+                    Investigation Radius: {searchRadius}m
                   </p>
                 </div>
               </Popup>
@@ -306,20 +390,41 @@ export const CameraMap = ({
               center={[validCrimeLoc.lat, validCrimeLoc.lng]}
               radius={searchRadius}
               pathOptions={{
-                color: '#ef4444',
-                fillColor: '#ef4444',
-                fillOpacity: 0.15,
-                weight: 2.5,
-                dashArray: '8, 8'
+                color: '#CF4500',
+                fillColor: '#F37338',
+                fillOpacity: 0.1,
+                weight: 2,
+                dashArray: '6, 6'
               }}
             />
+
+            {/* Connective Orbital Trajectory Lines between Crime Scene and Nearby CCTV Nodes */}
+            {cameras.map((cam) => {
+              if (!cam.latitude || !cam.longitude) return null;
+              return (
+                <Polyline
+                  key={`orbit-${cam.id || cam.cameraCode}`}
+                  positions={[
+                    [validCrimeLoc.lat, validCrimeLoc.lng],
+                    [cam.latitude, cam.longitude]
+                  ]}
+                  pathOptions={{
+                    color: '#F37338',
+                    weight: 1.2,
+                    opacity: 0.45,
+                    dashArray: '3, 6'
+                  }}
+                />
+              );
+            })}
           </>
         )}
 
-        {/* CCTV Cameras with FOV Direction Cones */}
+        {/* CCTV Cameras & FOV Cones */}
         {cameras.map((cam) => {
           if (!cam.latitude || !cam.longitude) return null;
 
+          const isSelected = selectedCameraId === cam.id;
           const fovPolygon = getFovPolygonCoordinates(
             cam.latitude,
             cam.longitude,
@@ -329,120 +434,95 @@ export const CameraMap = ({
           );
 
           const coneColor = cam.verificationStatus === 'APPROVED' 
-            ? (cam.cameraStatus === 'ACTIVE' ? '#10b981' : '#ef4444') 
-            : '#f59e0b';
+            ? (cam.cameraStatus === 'ACTIVE' ? '#10B981' : '#CF4500') 
+            : '#F79E1B';
 
           return (
             <React.Fragment key={cam.id || cam.cameraCode}>
-              {/* Field of View (FOV) Sector Cone Polygon on Map */}
+              {/* Field of View (FOV) Sector Cone Polygon */}
               {fovPolygon.length > 0 && (
                 <Polygon
                   positions={fovPolygon}
                   pathOptions={{
                     color: coneColor,
                     fillColor: coneColor,
-                    fillOpacity: 0.22,
+                    fillOpacity: 0.15,
                     weight: 1.5,
                     dashArray: cam.verificationStatus === 'PENDING' ? '4, 4' : null
                   }}
                 />
               )}
 
-              {/* Camera Marker with Rotated Direction Angle Arrow */}
+              {/* Camera Marker with Orientation Arrow */}
               <Marker
                 position={[cam.latitude, cam.longitude]}
-                icon={createCameraIcon(cam.cameraStatus, cam.verificationStatus, cam.directionAngle || 0)}
+                icon={createCameraIcon(cam.cameraStatus, cam.verificationStatus, cam.directionAngle || 0, isSelected)}
                 eventHandlers={{
                   click: () => onSelectCamera && onSelectCamera(cam)
                 }}
               >
                 <Popup>
-                  <div className="p-2 text-slate-900 min-w-[240px]">
-                    <div className="flex items-center justify-between gap-2 border-b pb-1 mb-2">
-                      <span className="font-bold text-police-700 font-mono text-sm">{cam.cameraCode}</span>
-                      <div className="flex gap-1">
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                          cam.cameraStatus === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                  <div className="p-3 text-[#141413] min-w-[250px] space-y-2">
+                    <div className="flex items-center justify-between border-b border-[#E5DFD9] pb-1.5">
+                      <span className="font-bold text-[#141413] font-mono text-xs">{cam.cameraCode}</span>
+                      <div className="flex gap-1.5">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          cam.cameraStatus === 'ACTIVE' 
+                            ? 'bg-[#EAF7EE] text-[#0A7334] border border-[#BDE7CA]' 
+                            : 'bg-[#FDF0EE] text-[#CF4500] border border-[#F8C6BC]'
                         }`}>
-                          {cam.cameraStatus}
+                          {cam.cameraStatus === 'ACTIVE' ? '● Online' : '● Offline'}
                         </span>
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                          cam.verificationStatus === 'APPROVED' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          cam.verificationStatus === 'APPROVED' 
+                            ? 'bg-white text-[#141413] border border-[#D1CDC7]' 
+                            : 'bg-[#FEF6E9] text-[#B56708] border border-[#FADBA6]'
                         }`}>
-                          {cam.verificationStatus}
+                          {cam.verificationStatus === 'APPROVED' ? '✓ Verified' : '◷ Pending'}
                         </span>
                       </div>
                     </div>
 
-                    <p className="font-semibold text-sm leading-tight">{cam.cameraName}</p>
-                    <p className="text-xs text-slate-600 mt-1 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      {cam.fullAddress || cam.area || 'Central District'}
-                    </p>
+                    <div>
+                      <h4 className="font-bold text-sm text-[#141413] leading-snug">{cam.cameraName}</h4>
+                      <p className="text-xs text-[#696969] mt-0.5 flex items-center gap-1">
+                        <MapPin className="w-3.5 h-3.5 text-[#CF4500] shrink-0" />
+                        {cam.fullAddress || cam.area || 'Central District'}
+                      </p>
+                    </div>
 
-                    {/* Camera Owner Info Card (Restricted for Surveyors) */}
+                    {/* Camera Specs info */}
+                    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-[16px] bg-[#F3F0EE] border border-[#E5DFD9] text-xs">
+                      <div>
+                        <span className="text-[10px] text-[#696969] block">Orientation</span>
+                        <strong className="text-[#141413]">{cam.directionAngle || 0}° ({cam.cardinalDirection || 'EAST'})</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-[#696969] block">Coverage</span>
+                        <strong className="text-[#141413]">{cam.coverageRadiusMeters || 80}m</strong>
+                      </div>
+                    </div>
+
+                    {/* Owner Info (Restricted for Surveyors) */}
                     {isSurveyor ? (
-                      <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1 font-semibold flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span className="text-[10px]">Owner Info Restricted (Police Access Only)</span>
+                      <div className="p-2 rounded-full bg-[#FEF6E9] border border-[#FADBA6] text-xs text-[#B56708] font-medium flex items-center justify-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5 text-[#B56708] shrink-0" />
+                        <span className="text-[10px]">Owner info restricted for surveyors</span>
                       </div>
                     ) : (
-                      <div className="mt-2 p-2 rounded-lg bg-blue-50 border border-blue-200 text-xs space-y-1">
-                        <p className="font-bold text-blue-950 flex items-center gap-1">
-                          <User className="w-3.5 h-3.5 text-blue-700" />
+                      <div className="p-2.5 rounded-[16px] bg-white border border-[#E5DFD9] text-xs space-y-0.5">
+                        <p className="font-semibold text-[#141413] flex items-center gap-1 text-[11px]">
+                          <User className="w-3 h-3 text-[#3860BE]" />
                           Owner: {cam.ownerName || 'Metropolitan Police Dept'}
                         </p>
                         {cam.ownerContact && (
-                          <p className="text-[11px] text-blue-900 flex items-center gap-1 font-mono">
-                            <Phone className="w-3 h-3 text-blue-700" />
+                          <p className="text-[11px] text-[#696969] flex items-center gap-1 font-mono">
+                            <Phone className="w-3 h-3 text-[#CF4500]" />
                             Contact: <strong>{cam.ownerContact}</strong>
                           </p>
                         )}
-                        <p className="text-[9px] text-blue-700 font-semibold uppercase">
-                          Type: {cam.ownerType || 'PUBLIC_GOVT'}
-                        </p>
                       </div>
                     )}
-
-                    <div className="mt-2 text-[11px] text-slate-700 bg-slate-50 p-2 rounded border border-slate-200 space-y-1">
-                      <div className="flex justify-between">
-                        <span>Camera Type:</span>
-                        <strong className="font-mono">{cam.cameraType}</strong>
-                      </div>
-                      <div className="flex justify-between text-police-700 font-bold">
-                        <span className="flex items-center gap-1">
-                          <Compass className="w-3.5 h-3.5 text-police-600" /> Facing Direction:
-                        </span>
-                        <span>{cam.cardinalDirection || 'EAST'} ({cam.directionAngle || 0}°)</span>
-                      </div>
-                      <div className="flex justify-between text-amber-700 font-bold">
-                        <span>FOV Capture Width:</span>
-                        <span>{cam.fovAngle || 60}° Spread</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Coverage Radius:</span>
-                        <strong>{cam.coverageRadiusMeters || 80}m</strong>
-                      </div>
-                      {cam.distanceMeters !== undefined && (
-                        <div className="flex justify-between text-rose-600 font-bold pt-1 border-t border-slate-200">
-                          <span>Proximity to Crime:</span>
-                          <span>{cam.distanceMeters}m</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* QR Code Tag */}
-                    <div className="mt-2 pt-2 border-t flex items-center gap-2">
-                      <img 
-                        src={cam.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${cam.cameraCode}`} 
-                        alt="QR Code" 
-                        className="w-10 h-10 rounded border border-slate-300 bg-white p-0.5"
-                      />
-                      <div className="text-[10px] text-slate-500">
-                        <p className="font-bold text-slate-700">Digital Hardware Tag</p>
-                        <p>Scan for instant verification</p>
-                      </div>
-                    </div>
                   </div>
                 </Popup>
               </Marker>

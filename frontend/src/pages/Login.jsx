@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, User, AlertCircle, ArrowRight, ShieldCheck, Target, Video } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const Login = () => {
@@ -28,98 +28,209 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-navy-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Animated Glows */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-police-600/20 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="min-h-screen w-full bg-[#141413] flex flex-col justify-between relative overflow-x-hidden text-[#141413]">
+      {/* Top Government Official Strip */}
+      <div className="w-full bg-[#141413] text-[#FCFBFA] py-2 px-4 sm:px-8 text-xs flex items-center justify-between border-b border-[#262627] z-20 shrink-0">
+        <div className="flex items-center gap-2 max-w-[1800px] mx-auto w-full">
+          <span className="font-semibold text-white">🇮🇳 Government of India</span>
+          <span className="text-[#696969]">•</span>
+          <span className="text-[#D1CDC7]">Ministry of Home Affairs — National Police GIS Surveillance &amp; CCTNS Division</span>
+        </div>
+      </div>
 
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md glass-card p-8 z-10 relative"
-      >
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-police-600 to-police-400 flex items-center justify-center shadow-xl shadow-police-600/30 mb-4">
-            <Shield className="w-9 h-9 text-white" />
+      {/* Main 100% Full-Screen Edge-to-Edge Split Layout (Zero Leftover Space) */}
+      <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-12 min-h-[calc(100vh-68px)]">
+        
+        {/* ========================================================= */}
+        {/* LEFT COLUMN: 100% Full-Bleed Police Surveillance Visual   */}
+        {/* ========================================================= */}
+        <div className="lg:col-span-7 xl:col-span-8 relative min-h-[300px] sm:min-h-[380px] lg:min-h-full flex flex-col justify-between p-6 sm:p-10 lg:p-14 xl:p-16 overflow-hidden select-none bg-[#141413]">
+          {/* Edge-to-edge high resolution command center photo */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 hover:scale-105"
+            style={{ backgroundImage: `url('/police-command-hero.jpg')` }}
+          />
+
+          {/* Cinematic Vignettes for Crystal Clear Readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#141413] via-[#141413]/55 to-[#141413]/25 pointer-events-none" />
+          <div className="hidden lg:block absolute inset-0 bg-gradient-to-r from-[#141413]/40 via-transparent to-[#141413]/80 pointer-events-none" />
+
+          {/* Top Status Badge */}
+          <div className="relative z-10 flex items-center gap-2">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide bg-black/75 backdrop-blur-md text-white border border-white/20 shadow-md">
+              <span className="w-2 h-2 rounded-full bg-[#CF4500] animate-pulse"></span>
+              <span>LIVE POLICE GIS RADAR • OPERATIONAL</span>
+            </span>
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">POLICE CAMERA MAPPING</h2>
-          <p className="text-xs text-slate-400 mt-1">Smart City Law Enforcement GIS Network</p>
+
+          {/* Bottom Editorial Intel Overlay */}
+          <div className="relative z-10 max-w-2xl space-y-3 pt-12 sm:pt-16 lg:pt-0 text-white">
+            <div className="mc-eyebrow text-xs">
+              <span className="w-2 h-2 rounded-full bg-[#F37338]"></span>
+              <span className="text-[#F37338] tracking-[+0.06em]">METROPOLITAN SURVEILLANCE INFRASTRUCTURE</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl md:text-4xl xl:text-5xl font-medium tracking-[-0.02em] leading-tight text-white drop-shadow-md">
+              Forensic CCTV Mapping &amp; Crime Scene Reconnaissance
+            </h1>
+
+            <p className="text-xs sm:text-sm text-[#D1CDC7] font-normal leading-relaxed max-w-xl drop-shadow-sm">
+              Centralized law enforcement geospatial intelligence platform connecting municipal and civilian CCTV nodes, field surveys, and live incident proximity trajectories.
+            </p>
+
+            {/* Feature Telemetry Pills */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <div className="px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2 shadow-sm">
+                <Target className="w-3.5 h-3.5 text-[#F37338]" />
+                <span>Crime Scene Proximity Radar</span>
+              </div>
+              <div className="px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-2 shadow-sm">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
+                <span>CCTNS Encrypted Protocol</span>
+              </div>
+              <div className="hidden sm:flex px-3.5 py-1.5 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white items-center gap-2 shadow-sm">
+                <Video className="w-3.5 h-3.5 text-[#3860BE]" />
+                <span>24/7 CCTV Feed Evidentiary Log</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-            <span>{error}</span>
+        {/* ========================================================= */}
+        {/* RIGHT COLUMN: 100% Full-Height Authentication Portal      */}
+        {/* ========================================================= */}
+        <div className="lg:col-span-5 xl:col-span-4 bg-[#FCFBFA] border-t lg:border-t-0 lg:border-l border-[#E5DFD9] flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-14 relative z-10">
+          
+          {/* Subtle Ghost Watermark */}
+          <div className="absolute right-6 top-6 text-6xl font-bold text-[#E8E2DA]/30 select-none pointer-events-none tracking-[-0.04em]">
+            CCTNS
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Username / Badge ID</label>
-            <div className="relative">
-              <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="glass-input w-full pl-10"
-                placeholder="Enter username"
-                required
-              />
+          <div className="my-auto w-full max-w-md mx-auto space-y-6 relative z-10 py-6 lg:py-0">
+            {/* Official Police Department Shield Emblem & Header */}
+            <div className="flex flex-col items-center text-center">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-white flex items-center justify-center shadow-mc-card mb-3.5 border border-[#E5DFD9] p-2.5 hover:scale-105 transition-transform">
+                <img 
+                  src="/police-logo.png" 
+                  alt="Police Department Emblem" 
+                  className="w-full h-full object-contain drop-shadow-xs" 
+                />
+              </div>
+
+              <div className="mc-eyebrow justify-center text-[11px] mb-1">
+                <span className="mc-eyebrow-dot"></span>
+                <span>SURAKSHANET COMMAND</span>
+              </div>
+
+              <h2 className="text-2xl sm:text-3xl font-medium text-[#141413] tracking-[-0.02em]">
+                Police GIS Portal
+              </h2>
+              <p className="text-xs text-[#696969] mt-1">
+                Authorized Law Enforcement Command Access Only
+              </p>
+            </div>
+
+            {/* Error Alert */}
+            {error && (
+              <div className="p-3.5 rounded-[20px] bg-[#FDF0EE] border border-[#F8C6BC] text-[#CF4500] text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Credentials Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#141413] mb-1.5 uppercase tracking-[+0.04em]">
+                  Username / Badge ID
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-[#696969] absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="mc-input w-full pl-10 py-3 text-sm bg-white shadow-xs"
+                    placeholder="Enter badge username"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#141413] mb-1.5 uppercase tracking-[+0.04em]">
+                  Secret Passcode
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#696969] absolute left-3.5 top-3.5" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mc-input w-full pl-10 py-3 text-sm bg-white shadow-xs"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="mc-btn-primary w-full mt-5 py-3.5 text-sm shadow-md"
+              >
+                {loading ? 'Authenticating Officer...' : 'Sign In to Investigation Command'}
+                <ArrowRight className="w-4 h-4 text-[#F37338]" />
+              </button>
+            </form>
+
+            {/* Quick Demo Access Roles */}
+            <div className="border-t border-[#E5DFD9] pt-5">
+              <p className="text-[11px] text-[#696969] text-center font-bold mb-3 uppercase tracking-[+0.04em]">
+                Quick Demo Access Roles
+              </p>
+              <div className="grid grid-cols-3 gap-2.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => fillQuickCredentials('admin', 'admin123')}
+                  className="py-2 px-3 rounded-[20px] bg-white hover:bg-[#F3F0EE] border border-[#D1CDC7] text-[#141413] text-center font-medium transition-colors text-xs shadow-xs"
+                >
+                  Admin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickCredentials('officer1', 'officer123')}
+                  className="py-2 px-3 rounded-[20px] bg-white hover:bg-[#F3F0EE] border border-[#D1CDC7] text-[#3860BE] text-center font-medium transition-colors text-xs shadow-xs"
+                >
+                  Officer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fillQuickCredentials('surveyor1', 'surveyor123')}
+                  className="py-2 px-3 rounded-[20px] bg-white hover:bg-[#F3F0EE] border border-[#D1CDC7] text-[#B56708] text-center font-medium transition-colors text-xs shadow-xs"
+                >
+                  Surveyor
+                </button>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="glass-input w-full pl-10"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="glass-button-primary w-full mt-6 py-3"
-          >
-            {loading ? 'Authenticating...' : 'Sign In to Portal'}
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </form>
-
-        {/* Demo Accounts Quick Login */}
-        <div className="mt-8 border-t border-slate-800 pt-5">
-          <p className="text-[11px] text-slate-400 text-center font-medium mb-3">QUICK DEMO ROLES</p>
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <button
-              onClick={() => fillQuickCredentials('admin', 'admin123')}
-              className="px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-purple-300 text-center font-medium transition-colors"
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => fillQuickCredentials('officer1', 'officer123')}
-              className="px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-police-300 text-center font-medium transition-colors"
-            >
-              Officer
-            </button>
-            <button
-              onClick={() => fillQuickCredentials('surveyor1', 'surveyor123')}
-              className="px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700 text-amber-300 text-center font-medium transition-colors"
-            >
-              Surveyor
-            </button>
+          {/* Bottom Security Notice */}
+          <div className="pt-4 text-center text-[11px] text-[#696969] font-mono shrink-0">
+            Classified Law Enforcement Access • BNS 2023 &amp; IT Act Sec 66
           </div>
         </div>
-      </motion.div>
+      </div>
+
+      {/* Dark Warm-Black Editorial Footer */}
+      <footer className="w-full py-2.5 px-6 sm:px-8 text-center text-xs text-[#D1CDC7] bg-[#141413] border-t border-[#262627] z-20 shrink-0 space-y-0.5">
+        <p className="font-medium text-white text-xs">
+          National Crime Records Bureau &amp; Police GIS Infrastructure Network
+        </p>
+        <p className="text-[11px] text-[#696969]">
+          Classified Law Enforcement Portal • Authorized Law Enforcement Personnel Only
+        </p>
+      </footer>
     </div>
   );
 };

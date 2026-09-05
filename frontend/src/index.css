@@ -2,45 +2,178 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer utilities {
-  .glass-card {
-    @apply bg-navy-900/80 backdrop-blur-xl border border-slate-800/80 shadow-2xl rounded-2xl;
+:root {
+  --canvas: #F3F0EE;
+  --lifted: #FCFBFA;
+  --bone: #F4F4F4;
+  --white: #FFFFFF;
+  
+  --ink: #141413;
+  --charcoal: #262627;
+  --slate-gray: #696969;
+  --dust: #D1CDC7;
+  
+  --signal-orange: #CF4500;
+  --signal-orange-light: #F37338;
+  --clay: #9A3A0A;
+  --link-blue: #3860BE;
+
+  --emerald-500: #10B981;
+  --amber-500: #F59E0B;
+  --red-600: #DC2626;
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: "Sofia Sans", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+@layer components {
+  /* Stadium & Card Containers */
+  .mc-stadium {
+    @apply bg-[#FCFBFA] border border-[#E5DFD9] rounded-[28px] sm:rounded-[36px] md:rounded-[40px] shadow-mc-card transition-all duration-200;
   }
-  .glass-card-hover {
-    @apply transition-all duration-300 hover:border-police-500/50 hover:shadow-police-500/10 hover:shadow-xl;
+  
+  .mc-stadium-hover {
+    @apply hover:border-[#D1CDC7] hover:shadow-mc-elevated;
   }
-  .glass-input {
-    @apply bg-slate-900/90 border border-slate-700/80 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-police-500/50 focus:border-police-500 transition-all duration-200;
+  
+  .mc-card {
+    @apply bg-[#FCFBFA] border border-[#E5DFD9] rounded-[24px] md:rounded-[32px] shadow-mc-card transition-all duration-200;
   }
-  .glass-button-primary {
-    @apply bg-gradient-to-r from-police-600 to-police-700 hover:from-police-500 hover:to-police-600 text-white font-medium px-5 py-2.5 rounded-xl shadow-lg shadow-police-900/40 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none;
+
+  /* Eyebrow Label with Identity Dot */
+  .mc-eyebrow {
+    @apply text-xs md:text-[13px] font-bold tracking-[+0.04em] uppercase text-[#696969] flex items-center gap-1.5;
+  }
+  
+  .mc-eyebrow-dot {
+    @apply w-2 h-2 rounded-full bg-[#CF4500] shrink-0;
+  }
+
+  /* Mastercard Inspired Buttons */
+  .mc-btn-primary {
+    @apply bg-[#141413] hover:bg-[#262627] active:scale-[0.99] text-[#F3F0EE] font-medium px-5 py-2.5 rounded-[20px] text-sm tracking-[-0.02em] transition-all duration-150 flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  .mc-btn-secondary {
+    @apply bg-white hover:bg-[#F3F0EE] active:scale-[0.99] text-[#141413] border-[1.5px] border-[#141413] font-medium px-5 py-2.5 rounded-[20px] text-sm tracking-[-0.02em] transition-all duration-150 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .mc-btn-signal {
+    @apply bg-[#CF4500] hover:bg-[#B53C00] active:scale-[0.99] text-white font-medium px-5 py-2.5 rounded-[24px] text-sm transition-all duration-150 flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* Satellite Micro-CTA (Circular action attached to portraits) */
+  .satellite-cta {
+    @apply w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white text-[#141413] shadow-md border border-[#E5DFD9] hover:bg-[#141413] hover:text-[#F3F0EE] flex items-center justify-center transition-all duration-150 cursor-pointer shrink-0;
+  }
+
+  /* Input Controls */
+  .mc-input {
+    @apply bg-white border border-[#D1CDC7] text-[#141413] placeholder-[#696969] rounded-[20px] px-4 py-2 text-sm focus:outline-none focus:border-[#141413] focus:ring-2 focus:ring-[#141413]/10 transition-all;
+  }
+
+  /* Status Badges */
+  .badge-approved, .badge-active, .badge-online {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#EAF7EE] text-[#0A7334] border border-[#BDE7CA];
+  }
+  
+  .badge-pending {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF6E9] text-[#B56708] border border-[#FADBA6];
+  }
+  
+  .badge-rejected, .badge-offline, .badge-danger {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FDF0EE] text-[#CF4500] border border-[#F8C6BC];
+  }
+
+  .badge-pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white text-[#141413] border border-[#D1CDC7];
+  }
+
+  /* Backward compatibility for previous classes */
+  .suraksha-card {
+    @apply mc-stadium;
+  }
+  .suraksha-card-hover {
+    @apply mc-stadium-hover;
+  }
+  .suraksha-input {
+    @apply mc-input;
+  }
+  .suraksha-btn-primary {
+    @apply mc-btn-primary;
+  }
+  .suraksha-btn-secondary {
+    @apply mc-btn-secondary;
+  }
+  .suraksha-btn-danger {
+    @apply mc-btn-signal;
+  }
+  .suraksha-btn-success {
+    @apply bg-[#0A7334] hover:bg-[#075928] text-white font-medium px-5 py-2.5 rounded-[20px] text-sm flex items-center justify-center gap-2;
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Soft Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: #F3F0EE;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
+  background: #D1CDC7;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #696969;
 }
 
-/* Leaflet map height reset */
+/* Leaflet Container in Stadium Frame */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  border-radius: 1rem;
-  background-color: #0b1120 !important;
+  border-radius: 28px;
+  background-color: #F3F0EE !important;
   z-index: 10;
+  font-family: inherit;
+}
+
+@media (min-width: 768px) {
+  .leaflet-container {
+    border-radius: 36px;
+  }
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 24px;
+  box-shadow: 0 16px 40px rgba(20, 20, 19, 0.12), 0 2px 6px rgba(20, 20, 19, 0.04);
+  border: 1px solid #E5DFD9;
+  background: #FCFBFA;
+  padding: 0;
+  overflow: hidden;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 10px;
+  right: 12px;
+  color: #696969;
+  font-size: 16px;
+  padding: 4px;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #141413;
 }

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
+import { BottomNav } from './components/BottomNav';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { CameraList } from './pages/CameraList';
@@ -13,6 +14,8 @@ import { ShieldAlert } from 'lucide-react';
 
 const ProtectedLayout = ({ children, allowedRoles }) => {
   const { user } = useAuth();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -21,35 +24,50 @@ const ProtectedLayout = ({ children, allowedRoles }) => {
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
     return (
-      <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col">
-        <Navbar />
+      <div className="min-h-screen bg-[#F3F0EE] text-[#141413] flex flex-col">
+        <Navbar 
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} 
+          isMobileSidebarOpen={isMobileSidebarOpen} 
+        />
         <div className="flex-1 flex overflow-hidden">
-          <Sidebar />
-          <main className="flex-1 p-8 flex items-center justify-center">
-            <div className="glass-card max-w-md w-full p-8 text-center space-y-4 border-l-4 border-l-rose-500">
-              <ShieldAlert className="w-12 h-12 text-rose-400 mx-auto animate-pulse" />
+          <Sidebar 
+            isMobileOpen={isMobileSidebarOpen} 
+            onCloseMobile={() => setIsMobileSidebarOpen(false)} 
+          />
+          <main className="flex-1 p-4 md:p-8 flex items-center justify-center pb-24 md:pb-8">
+            <div className="mc-stadium max-w-md w-full p-6 md:p-8 text-center space-y-4 border-l-4 border-l-[#CF4500]">
+              <ShieldAlert className="w-12 h-12 text-[#CF4500] mx-auto" />
               <div>
-                <h3 className="text-lg font-bold text-white">Access Restricted (403 Forbidden)</h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Field Surveyors <span className="font-mono text-rose-300">({userRole || 'ROLE_SURVEY_PERSON'})</span> are authorized strictly for camera surveying. You cannot access police investigation cases or verification queues.
+                <h3 className="text-lg font-bold text-[#141413]">Access Restricted (403 Forbidden)</h3>
+                <p className="text-xs text-[#696969] mt-2 leading-relaxed">
+                  Your authorized role <span className="font-mono font-bold text-[#CF4500] bg-[#FDF0EE] px-2 py-0.5 rounded-full border border-[#F8C6BC]">({userRole || 'ROLE_SURVEY_PERSON'})</span> does not have authorization to view this police investigation section.
                 </p>
               </div>
             </div>
           </main>
         </div>
+        <BottomNav onOpenMobileMenu={() => setIsMobileSidebarOpen(true)} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-100 flex flex-col">
-      <Navbar />
+    <div className="min-h-screen bg-[#F3F0EE] text-[#141413] flex flex-col selection:bg-[#CF4500] selection:text-white">
+      <Navbar 
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} 
+        isMobileSidebarOpen={isMobileSidebarOpen} 
+      />
       <div className="flex-1 flex overflow-hidden">
-        <Sidebar />
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl mx-auto w-full">
+        <Sidebar 
+          isMobileOpen={isMobileSidebarOpen} 
+          onCloseMobile={() => setIsMobileSidebarOpen(false)} 
+        />
+        <main className="flex-1 p-3.5 sm:p-5 md:p-6 lg:p-7 overflow-y-auto w-full max-w-[1520px] mx-auto pb-24 md:pb-8">
           {children}
         </main>
       </div>
+      {/* Mobile Floating Bottom Navigation Bar */}
+      <BottomNav onOpenMobileMenu={() => setIsMobileSidebarOpen(true)} />
     </div>
   );
 };

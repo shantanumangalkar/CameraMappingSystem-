@@ -3,7 +3,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { CameraMap } from '../components/CameraMap';
-import { ClipboardList, Plus, CheckCircle2, Clock, XCircle, MapPin, Camera, Navigation, QrCode, X, User, Phone, AlertTriangle, ShieldCheck, Lock, Compass } from 'lucide-react';
+import { 
+  ClipboardList, 
+  Plus, 
+  CheckCircle2, 
+  Clock, 
+  XCircle, 
+  MapPin, 
+  Camera, 
+  Navigation, 
+  QrCode, 
+  X, 
+  User, 
+  Phone, 
+  AlertTriangle, 
+  Compass,
+  Eye,
+  ArrowRight
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const MyFieldSurveys = () => {
   const { user } = useAuth();
@@ -27,6 +45,7 @@ export const MyFieldSurveys = () => {
     cardinalDirection: 'EAST',
     directionAngle: 90,
     coverageRadiusMeters: 100,
+    fovAngle: 60,
     ownerName: 'Commercial Store Owner',
     ownerContact: '+91 9876543210',
     ownerType: 'COMMERCIAL',
@@ -83,24 +102,35 @@ export const MyFieldSurveys = () => {
             longitude: Math.round(position.coords.longitude * 100000) / 100000,
           }));
         },
-        (error) => {
-          alert('GPS location capture failed. Please enter coordinates manually.');
-        }
+        () => alert('GPS location capture failed. Please enter coordinates manually.')
       );
     }
   };
 
-  const handleMapLocationSelect = (lat, lng) => {
-    setForm((prev) => ({
-      ...prev,
-      latitude: Math.round(lat * 100000) / 100000,
-      longitude: Math.round(lng * 100000) / 100000,
-    }));
+  const handleMapLocationSelect = (a, b) => {
+    let lat, lng;
+    if (typeof a === 'object' && a !== null) {
+      lat = a.lat !== undefined ? a.lat : a.latitude;
+      lng = a.lng !== undefined ? a.lng : a.longitude;
+    } else {
+      lat = a;
+      lng = b;
+    }
+    const numLat = parseFloat(lat);
+    const numLng = parseFloat(lng);
+    if (!isNaN(numLat) && !isNaN(numLng)) {
+      const roundedLat = Math.round(numLat * 100000) / 100000;
+      const roundedLng = Math.round(numLng * 100000) / 100000;
+      setForm((prev) => ({
+        ...prev,
+        latitude: roundedLat,
+        longitude: roundedLng,
+      }));
+    }
   };
 
   const allCameras = data?.data?.content || [];
 
-  // Filter cameras surveyed by current logged-in user or fallback sample
   const myCameras = allCameras.filter(
     (c) => c.surveyorName === user?.fullName || c.surveyorId === user?.id
   );
@@ -116,15 +146,26 @@ export const MyFieldSurveys = () => {
   const rejectedCount = displayList.filter(c => c.verificationStatus === 'REJECTED').length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-6 border-l-4 border-l-police-500">
-        <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-police-400" />
-            My Field Surveys & Verification Status
-          </h2>
-          <p className="text-xs text-slate-400 mt-1">Track all CCTV cameras surveyed by you, inspect admin verification status, or submit new camera surveys.</p>
+    <div className="space-y-6 md:space-y-8">
+      {/* Top Banner */}
+      <div className="mc-stadium p-5 sm:p-7 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 text-[100px] md:text-[140px] font-bold text-[#E8E2DA]/40 select-none pointer-events-none tracking-[-0.04em] pr-4">
+          SURVEY
+        </div>
+
+        <div className="relative z-10 max-w-2xl space-y-2">
+          <div className="mc-eyebrow">
+            <span className="mc-eyebrow-dot"></span>
+            <span>FIELD PATROL INTELLIGENCE</span>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-[#141413] tracking-[-0.02em] leading-tight">
+            My Field Surveys &amp; Verification Dossier
+          </h1>
+
+          <p className="text-sm md:text-base text-[#696969] font-normal leading-relaxed">
+            Monitor all CCTV points surveyed by your field unit, inspect approval status, or register new camera surveillance nodes.
+          </p>
         </div>
 
         <button
@@ -133,505 +174,445 @@ export const MyFieldSurveys = () => {
             setForm(getInitialForm());
             setShowAddModal(true);
           }}
-          className="glass-button-primary shrink-0 flex items-center gap-1.5"
+          className="mc-btn-primary relative z-10 shrink-0 self-start md:self-auto"
         >
-          <Plus className="w-4 h-4" />
-          Survey New Camera
+          <Plus className="w-4 h-4 text-[#F37338]" />
+          <span>Survey New Camera</span>
         </button>
       </div>
 
-      {/* Verification Status Summary Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <div className="glass-card p-4 bg-slate-900/90 border-slate-800">
+      {/* Verification Status Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mc-card p-4 sm:p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-semibold">Total Surveyed</span>
-            <Camera className="w-5 h-5 text-police-400" />
+            <span className="text-xs font-semibold text-[#696969]">Total Surveyed</span>
+            <div className="w-8 h-8 rounded-full bg-[#F3F0EE] text-[#141413] flex items-center justify-center shrink-0">
+              <Camera className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-white mt-2">{displayList.length}</p>
+          <p className="text-2xl sm:text-3xl font-medium text-[#141413] mt-3 tracking-[-0.02em]">{displayList.length}</p>
+          <p className="text-[11px] text-[#696969] mt-1">Total points submitted</p>
         </div>
 
-        <div className="glass-card p-4 bg-emerald-950/20 border-emerald-500/30">
+        <div className="mc-card p-4 sm:p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-emerald-300 font-semibold">Approved & Live</span>
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <span className="text-xs font-semibold text-[#0A7334]">Approved &amp; Live</span>
+            <div className="w-8 h-8 rounded-full bg-[#EAF7EE] text-[#0A7334] flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-emerald-400 mt-2">{approvedCount}</p>
+          <p className="text-2xl sm:text-3xl font-medium text-[#0A7334] mt-3 tracking-[-0.02em]">{approvedCount}</p>
+          <p className="text-[11px] text-[#0A7334] mt-1">Active on police GIS map</p>
         </div>
 
-        <div className="glass-card p-4 bg-amber-950/20 border-amber-500/30">
+        <div className="mc-card p-4 sm:p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-amber-300 font-semibold">Pending Admin Review</span>
-            <Clock className="w-5 h-5 text-amber-400" />
+            <span className="text-xs font-semibold text-[#B56708]">Pending Review</span>
+            <div className="w-8 h-8 rounded-full bg-[#FEF6E9] text-[#B56708] flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-amber-400 mt-2">{pendingCount}</p>
+          <p className="text-2xl sm:text-3xl font-medium text-[#B56708] mt-3 tracking-[-0.02em]">{pendingCount}</p>
+          <p className="text-[11px] text-[#B56708] mt-1">Awaiting police review</p>
         </div>
 
-        <div className="glass-card p-4 bg-rose-950/20 border-rose-500/30">
+        <div className="mc-card p-4 sm:p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-rose-300 font-semibold">Rejected Surveys</span>
-            <XCircle className="w-5 h-5 text-rose-400" />
+            <span className="text-xs font-semibold text-[#CF4500]">Rejected</span>
+            <div className="w-8 h-8 rounded-full bg-[#FDF0EE] text-[#CF4500] flex items-center justify-center shrink-0">
+              <XCircle className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-rose-400 mt-2">{rejectedCount}</p>
+          <p className="text-2xl sm:text-3xl font-medium text-[#CF4500] mt-3 tracking-[-0.02em]">{rejectedCount}</p>
+          <p className="text-[11px] text-[#CF4500] mt-1">Correction required</p>
         </div>
       </div>
 
       {/* Surveyed Cameras Grid Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {isLoading ? (
-          <div className="col-span-full glass-card p-8 text-center text-slate-400">
+          <div className="col-span-full mc-stadium p-12 text-center text-[#696969]">
             Loading your surveyed cameras...
           </div>
         ) : displayList.length === 0 ? (
-          <div className="col-span-full glass-card p-12 text-center text-slate-400 space-y-2">
-            <ClipboardList className="w-12 h-12 text-slate-500 mx-auto opacity-80" />
-            <h3 className="text-base font-bold text-white">No Field Surveys Recorded Yet</h3>
-            <p className="text-xs text-slate-500">Click 'Survey New Camera' above to register your first CCTV camera point.</p>
+          <div className="col-span-full mc-stadium p-12 text-center text-[#696969] space-y-2">
+            <ClipboardList className="w-12 h-12 text-[#696969] mx-auto opacity-50" />
+            <h3 className="text-lg font-medium text-[#141413]">No Field Surveys Recorded Yet</h3>
+            <p className="text-xs text-[#696969]">Click 'Survey New Camera' above to register your first CCTV point.</p>
           </div>
         ) : (
-          displayList.map((cam) => (
-            <div key={cam.id || cam.cameraCode} className="glass-card p-5 space-y-3 flex flex-col justify-between hover:border-police-500/40 transition-all border-slate-800">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                  <span className="font-mono font-bold text-police-300 text-sm">{cam.cameraCode}</span>
-                  <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded font-mono">
+          displayList.map((cam, idx) => (
+            <motion.div 
+              key={cam.id || cam.cameraCode} 
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.03 }}
+              className="mc-card p-5 sm:p-6 flex flex-col justify-between hover:border-[#D1CDC7] hover:shadow-mc-elevated transition-all duration-200"
+            >
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between border-b border-[#E5DFD9] pb-3">
+                  <span className="font-mono font-bold text-[#141413] text-sm">{cam.cameraCode}</span>
+                  <span className="text-[10px] bg-[#F3F0EE] text-[#141413] border border-[#D1CDC7] px-2.5 py-0.5 rounded-full font-mono font-medium">
                     {cam.cameraType}
                   </span>
                 </div>
 
-                <h4 className="font-bold text-white text-base leading-tight">{cam.cameraName}</h4>
+                <div>
+                  <div className="mc-eyebrow text-[10px] mb-1">
+                    <span className="mc-eyebrow-dot"></span>
+                    <span>SURVEY RECORD</span>
+                  </div>
+                  <h4 className="font-medium text-[#141413] text-base leading-snug">{cam.cameraName}</h4>
+                </div>
 
-                <div className="text-xs text-slate-400 space-y-1">
-                  <p className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    {cam.fullAddress || `${cam.city || 'Nagpur'}, ${cam.state || 'Maharashtra'}`}
+                <div className="text-xs text-[#696969] space-y-1">
+                  <p className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#CF4500] shrink-0" />
+                    <span className="truncate">{cam.fullAddress || cam.area}</span>
                   </p>
-                  <p className="font-mono text-[11px] text-slate-500">
+                  <p className="font-mono text-[11px] text-[#696969]">
                     Coords: {cam.latitude?.toFixed(5)}, {cam.longitude?.toFixed(5)}
                   </p>
                 </div>
 
-                {/* Verification Status Banner */}
-                <div className={`p-3 rounded-xl border text-xs space-y-1 ${
-                  cam.verificationStatus === 'APPROVED'
-                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                    : cam.verificationStatus === 'PENDING'
-                    ? 'bg-amber-950/40 border-amber-500/40 text-amber-300'
-                    : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
-                }`}>
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="flex items-center gap-1.5 uppercase font-mono text-[11px]">
-                      {cam.verificationStatus === 'APPROVED' && <CheckCircle2 className="w-4 h-4 text-emerald-400" />}
-                      {cam.verificationStatus === 'PENDING' && <Clock className="w-4 h-4 text-amber-400 animate-pulse" />}
-                      {cam.verificationStatus === 'REJECTED' && <XCircle className="w-4 h-4 text-rose-400" />}
-                      Status: {cam.verificationStatus}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-normal">
-                      {cam.surveyDate || 'Recent'}
-                    </span>
-                  </div>
-
-                  {cam.verificationStatus === 'APPROVED' && (
-                    <p className="text-[11px] text-emerald-200">
-                      Camera authorized and live on National Police GIS database.
-                    </p>
-                  )}
-
-                  {cam.verificationStatus === 'PENDING' && (
-                    <p className="text-[11px] text-amber-200">
-                      Under review by Admin Verification Queue.
-                    </p>
-                  )}
-
-                  {cam.verificationStatus === 'REJECTED' && (
-                    <div className="pt-1 border-t border-rose-500/30 text-[11px] space-y-0.5">
-                      <p className="font-bold text-rose-400 flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Rejection Reason:
-                      </p>
-                      <p className="text-rose-200 italic">
-                        {cam.rejectionReason || 'Inaccurate GPS coordinates or field of view obstruction.'}
-                      </p>
-                    </div>
-                  )}
+                {/* Status Badges */}
+                <div className="flex items-center justify-between pt-1">
+                  <span className={cam.cameraStatus === 'ACTIVE' ? 'badge-active' : 'badge-offline'}>
+                    {cam.cameraStatus === 'ACTIVE' ? '● Online' : '● Offline'}
+                  </span>
+                  <span className={
+                    cam.verificationStatus === 'APPROVED' 
+                      ? 'badge-approved' 
+                      : cam.verificationStatus === 'REJECTED' 
+                      ? 'badge-rejected' 
+                      : 'badge-pending'
+                  }>
+                    {cam.verificationStatus === 'APPROVED' 
+                      ? '✓ Approved' 
+                      : cam.verificationStatus === 'REJECTED' 
+                      ? '× Rejected' 
+                      : '◷ Pending'}
+                  </span>
                 </div>
+
+                {/* Rejection Alert if Rejected */}
+                {cam.verificationStatus === 'REJECTED' && cam.rejectionReason && (
+                  <div className="p-3 rounded-[16px] bg-[#FDF0EE] border border-[#F8C6BC] text-[#CF4500] text-xs space-y-1">
+                    <span className="font-bold flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#CF4500]" />
+                      Rejection Reason:
+                    </span>
+                    <p className="text-[11px]">{cam.rejectionReason}</p>
+                  </div>
+                )}
 
                 {/* Technical Specs */}
-                <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-slate-300">
+                <div className="grid grid-cols-2 gap-2 text-[11px] bg-[#F3F0EE] p-3 rounded-[18px] text-[#141413]">
                   <div>
-                    <span className="text-slate-500 block text-[9px]">Lens Facing Direction:</span>
-                    <strong className="text-police-300">{cam.cardinalDirection || 'EAST'} ({cam.directionAngle || 90}°)</strong>
+                    <span className="text-[#696969] block text-[9px] uppercase font-semibold">Direction</span>
+                    <strong className="text-[#3860BE] mt-0.5 block">{cam.directionAngle || 0}° ({cam.cardinalDirection || 'EAST'})</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500 block text-[9px]">FOV Capture Width:</span>
-                    <strong className="text-amber-400">{cam.fovAngle || 60}° Angle Spread</strong>
+                    <span className="text-[#696969] block text-[9px] uppercase font-semibold">Coverage Arc</span>
+                    <strong className="text-[#141413] mt-0.5 block">{cam.coverageRadiusMeters || 80}m</strong>
                   </div>
                 </div>
               </div>
 
-              {/* Action Button */}
-              <div className="pt-3 border-t border-slate-800">
+              <div className="pt-4 mt-4 border-t border-[#E5DFD9] flex justify-end">
                 <button
                   onClick={() => setViewingCamera(cam)}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-police-300 font-semibold py-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5"
+                  className="mc-btn-secondary text-xs py-1.5 px-3"
                 >
-                  <QrCode className="w-4 h-4" />
-                  Inspect Hardware Tag QR Code
+                  <Eye className="w-3.5 h-3.5 text-[#3860BE]" />
+                  <span>Inspect Details &amp; QR</span>
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))
         )}
       </div>
 
-      {/* QR Code Details Modal */}
+      {/* Inspect Camera Modal */}
       {viewingCamera && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card max-w-md w-full p-6 space-y-4 relative">
-            <button onClick={() => setViewingCamera(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <div className="fixed inset-0 bg-[#141413]/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mc-stadium w-full sm:max-w-md rounded-b-none sm:rounded-[40px] p-6 md:p-8 space-y-5 relative shadow-2xl bg-[#FCFBFA]"
+          >
+            <button
+              onClick={() => setViewingCamera(null)}
+              className="absolute top-5 right-5 p-2 rounded-full text-[#696969] hover:text-[#141413] hover:bg-[#F3F0EE]"
+            >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-              <Camera className="w-6 h-6 text-police-400" />
-              <div>
-                <h3 className="font-bold text-white text-base">{viewingCamera.cameraName}</h3>
-                <p className="font-mono text-xs text-police-400">{viewingCamera.cameraCode}</p>
+            <div className="flex items-center gap-3.5 border-b border-[#E5DFD9] pb-4">
+              <div className="w-12 h-12 rounded-full bg-[#141413] text-[#FCFBFA] flex items-center justify-center font-bold">
+                <Camera className="w-6 h-6" />
+              </div>
+              <div className="pr-6">
+                <div className="mc-eyebrow text-[10px]">
+                  <span className="mc-eyebrow-dot"></span>
+                  <span>SURVEYED POINT</span>
+                </div>
+                <h3 className="font-medium text-[#141413] text-base leading-snug">{viewingCamera.cameraName}</h3>
+                <p className="font-mono text-xs text-[#3860BE]">{viewingCamera.cameraCode}</p>
               </div>
             </div>
 
-            <div className="bg-slate-900 p-4 rounded-xl border border-slate-800 text-center space-y-2">
-              <p className="text-xs font-semibold text-slate-300">Hardware Verification Tag</p>
+            <div className="grid grid-cols-2 gap-2.5 text-xs text-[#141413]">
+              <div className="bg-white p-3 rounded-[18px] border border-[#E5DFD9]">
+                <span className="text-[#696969] text-[10px] uppercase font-semibold block">Status</span>
+                <span className={`mt-1 inline-block ${viewingCamera.verificationStatus === 'APPROVED' ? 'badge-approved' : 'badge-pending'}`}>
+                  {viewingCamera.verificationStatus}
+                </span>
+              </div>
+              <div className="bg-white p-3 rounded-[18px] border border-[#E5DFD9]">
+                <span className="text-[#696969] text-[10px] uppercase font-semibold block">Coverage</span>
+                <strong className="text-[#141413] mt-1 block">{viewingCamera.coverageRadiusMeters}m</strong>
+              </div>
+            </div>
+
+            {/* Hardware QR Code */}
+            <div className="bg-[#F3F0EE] p-4 rounded-[24px] border border-[#E5DFD9] text-center space-y-2">
+              <p className="text-xs font-semibold text-[#141413] flex items-center justify-center gap-1.5">
+                <QrCode className="w-4 h-4 text-[#3860BE]" />
+                Digital Hardware Tag QR
+              </p>
               <img
                 src={viewingCamera.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${viewingCamera.cameraCode}`}
                 alt="QR Code"
-                className="w-36 h-36 mx-auto rounded-lg border border-slate-700 bg-white p-1"
+                className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-[16px] border border-[#D1CDC7] bg-white p-1.5 shadow-sm"
               />
-              <p className="text-[10px] text-slate-500 font-mono">{viewingCamera.cameraCode}</p>
+              <p className="text-[10px] text-[#696969] font-mono">{viewingCamera.cameraCode}</p>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
-      {/* Add Camera Survey Modal */}
+      {/* Survey New Camera Registration Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="glass-card max-w-xl w-full p-6 space-y-4 my-8 border-l-4 border-l-police-500">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-lg font-bold text-white">Survey & Register New CCTV Camera</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {errorMessage && (
-              <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCreateSubmit} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+        <div className="fixed inset-0 bg-[#141413]/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mc-stadium w-full sm:max-w-2xl rounded-b-none sm:rounded-[40px] max-h-[92vh] overflow-y-auto p-6 md:p-8 space-y-5 my-0 sm:my-8 shadow-2xl flex flex-col justify-between bg-[#FCFBFA]"
+          >
+            <div>
+              <div className="flex items-center justify-between border-b border-[#E5DFD9] pb-4">
                 <div>
-                  <label className="block text-slate-400 mb-1">Camera Code *</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.cameraCode}
-                    onChange={(e) => setForm({ ...form, cameraCode: e.target.value })}
-                    className="glass-input w-full font-mono"
-                  />
+                  <div className="mc-eyebrow text-[10px]">
+                    <span className="mc-eyebrow-dot"></span>
+                    <span>FIELD DISCOVERY</span>
+                  </div>
+                  <h3 className="text-xl font-medium text-[#141413] tracking-[-0.02em]">Survey New CCTV Camera Point</h3>
+                  <p className="text-xs text-[#696969] mt-0.5">Capture field hardware parameters, landmark location, and owner details.</p>
                 </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Camera Type *</label>
-                  <select
-                    value={form.cameraType}
-                    onChange={(e) => setForm({ ...form, cameraType: e.target.value })}
-                    className="glass-input w-full bg-slate-900"
-                  >
-                    <option value="PTZ">PTZ</option>
-                    <option value="DOME">Dome</option>
-                    <option value="BULLET">Bullet</option>
-                    <option value="ANPR">ANPR</option>
-                  </select>
-                </div>
+                <button onClick={() => setShowAddModal(false)} className="p-2 rounded-full text-[#696969] hover:text-[#141413] hover:bg-[#F3F0EE]">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1">Camera Name / Landmark *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.cameraName}
-                  onChange={(e) => setForm({ ...form, cameraName: e.target.value })}
-                  placeholder="e.g. Sitabuldi Square / North Gate Junction"
-                  className="glass-input w-full"
-                />
-              </div>
+              {errorMessage && (
+                <div className="mt-4 p-3.5 rounded-[20px] bg-[#FDF0EE] border border-[#F8C6BC] text-[#CF4500] text-xs font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
-              {/* Camera Owner Info */}
-              <div className="space-y-2 border border-police-500/30 p-3 rounded-xl bg-police-950/40">
-                <span className="font-bold text-police-300 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-police-400" />
-                  Camera Owner Information
-                </span>
-
+              <form id="surveyModalForm" onSubmit={handleCreateSubmit} className="space-y-4 text-xs mt-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 mb-1">Owner / Establishment Name *</label>
+                    <label className="block text-[#141413] font-medium mb-1">Camera Code <span className="text-[#CF4500]">*</span></label>
                     <input
                       type="text"
                       required
-                      value={form.ownerName}
-                      onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
-                      placeholder="e.g. Rajesh Kumar (Store Owner)"
-                      className="glass-input w-full"
+                      value={form.cameraCode}
+                      onChange={(e) => setForm({ ...form, cameraCode: e.target.value })}
+                      className="mc-input w-full font-mono text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-slate-400 mb-1">Contact Phone Number *</label>
-                    <input
-                      type="text"
-                      required
-                      value={form.ownerContact}
-                      onChange={(e) => setForm({ ...form, ownerContact: e.target.value })}
-                      placeholder="e.g. +91 9876543210"
-                      className="glass-input w-full font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Location Controls & GPS */}
-              <div className="space-y-2 border border-slate-800 p-3 rounded-xl bg-slate-900/50">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-300">Geospatial Location</span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleGetCurrentGPS}
-                      className="px-2.5 py-1 rounded-lg bg-police-600/20 hover:bg-police-600/30 text-police-300 border border-police-500/30 flex items-center gap-1 font-medium transition-all"
+                    <label className="block text-[#141413] font-medium mb-1">Camera Type <span className="text-[#CF4500]">*</span></label>
+                    <select
+                      value={form.cameraType}
+                      onChange={(e) => setForm({ ...form, cameraType: e.target.value })}
+                      className="mc-input w-full text-xs"
                     >
-                      <Navigation className="w-3 h-3 text-police-400" />
-                      Auto GPS
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setUseMapPicker(!useMapPicker)}
-                      className={`px-2.5 py-1 rounded-lg border font-medium transition-all ${
-                        useMapPicker ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' : 'bg-slate-800 text-slate-300 border-slate-700'
-                      }`}
-                    >
-                      {useMapPicker ? 'Close Map Picker' : 'Pick on Map'}
-                    </button>
+                      <option value="PTZ">PTZ</option>
+                      <option value="DOME">Dome</option>
+                      <option value="BULLET">Bullet</option>
+                      <option value="ANPR">ANPR</option>
+                    </select>
                   </div>
                 </div>
 
-                {useMapPicker && (
-                  <div className="h-48 w-full rounded-xl overflow-hidden my-2 border border-slate-700">
-                    <CameraMap
-                      interactivePicker={true}
-                      center={[form.latitude, form.longitude]}
-                      selectedLocation={{ lat: form.latitude, lng: form.longitude }}
-                      onMapClick={handleMapLocationSelect}
-                      zoom={15}
-                      autoFit={false}
-                    />
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-400 mb-1">Latitude *</label>
-                    <input
-                      type="number"
-                      step="0.00001"
-                      required
-                      value={form.latitude}
-                      onChange={(e) => setForm({ ...form, latitude: parseFloat(e.target.value) || 0 })}
-                      className="glass-input w-full font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-slate-400 mb-1">Longitude *</label>
-                    <input
-                      type="number"
-                      step="0.00001"
-                      required
-                      value={form.longitude}
-                      onChange={(e) => setForm({ ...form, longitude: parseFloat(e.target.value) || 0 })}
-                      className="glass-input w-full font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* City and State Inputs */}
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-400 mb-1">State / UT *</label>
+                  <label className="block text-[#141413] font-medium mb-1">Camera Name / Landmark <span className="text-[#CF4500]">*</span></label>
                   <input
                     type="text"
                     required
-                    value={form.state}
-                    onChange={(e) => setForm({ ...form, state: e.target.value })}
-                    placeholder="e.g. Maharashtra, Delhi NCR"
-                    className="glass-input w-full"
+                    value={form.cameraName}
+                    onChange={(e) => setForm({ ...form, cameraName: e.target.value })}
+                    placeholder="e.g. North Market Main Entrance"
+                    className="mc-input w-full text-xs"
                   />
                 </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">City / District *</label>
-                  <input
-                    type="text"
-                    required
-                    value={form.city}
-                    onChange={(e) => setForm({ ...form, city: e.target.value })}
-                    placeholder="e.g. Nagpur, Mumbai, Delhi"
-                    className="glass-input w-full"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-slate-400 mb-1">Full Address / Location Remarks</label>
-                <input
-                  type="text"
-                  value={form.fullAddress}
-                  onChange={(e) => setForm({ ...form, fullAddress: e.target.value })}
-                  placeholder="Street name, Sector, Landmark"
-                  className="glass-input w-full"
-                />
-              </div>
-
-              {/* Accurate Compass Direction Selector & Angle Fine-Tuning */}
-              <div className="space-y-2.5 border border-police-500/30 p-3.5 rounded-xl bg-police-950/40">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-police-300 flex items-center gap-1.5 text-xs">
-                    <Compass className="w-4 h-4 text-police-400" />
-                    Compass Direction & Accurate Lens Angle
+                {/* Owner Info */}
+                <div className="p-4 sm:p-5 rounded-[24px] bg-white border border-[#E5DFD9] space-y-3">
+                  <span className="font-bold text-[#141413] flex items-center gap-2 text-xs uppercase tracking-wider">
+                    <User className="w-4 h-4 text-[#3860BE]" />
+                    Camera Owner Information
                   </span>
-                  <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                    {form.cardinalDirection || 'EAST'} ({form.directionAngle || 90}°)
-                  </span>
-                </div>
-
-                {/* 8-Point Compass Direction Buttons */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { label: 'NORTH', angle: 0, icon: '⬆️' },
-                    { label: 'NORTH-EAST', angle: 45, icon: '↗️' },
-                    { label: 'EAST', angle: 90, icon: '➡️' },
-                    { label: 'SOUTH-EAST', angle: 135, icon: '↘️' },
-                    { label: 'SOUTH', angle: 180, icon: '⬇️' },
-                    { label: 'SOUTH-WEST', angle: 225, icon: '↙️' },
-                    { label: 'WEST', angle: 270, icon: '⬅️' },
-                    { label: 'NORTH-WEST', angle: 315, icon: '↖️' },
-                  ].map((dir) => (
-                    <button
-                      key={dir.label}
-                      type="button"
-                      onClick={() => setForm({ ...form, cardinalDirection: dir.label, directionAngle: dir.angle })}
-                      className={`p-1.5 rounded-lg border text-[10px] font-bold flex flex-col items-center gap-0.5 transition-all ${
-                        (form.cardinalDirection === dir.label || form.directionAngle === dir.angle)
-                          ? 'bg-police-600 text-white border-police-400 shadow-md'
-                          : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'
-                      }`}
-                    >
-                      <span>{dir.icon}</span>
-                      <span>{dir.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Angle Slider & Dial */}
-                <div className="pt-2 flex items-center gap-4">
-                  <div className="flex-1">
-                    <div className="flex justify-between text-[10px] text-slate-400 mb-1">
-                      <span>Facing Angle: <strong>{form.directionAngle || 0}°</strong></span>
-                      <span>0° (North) to 360°</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#141413] font-medium mb-1">Owner Name</label>
+                      <input
+                        type="text"
+                        value={form.ownerName}
+                        onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
+                        className="mc-input w-full text-xs"
+                      />
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="360"
-                      step="5"
-                      value={form.directionAngle || 0}
-                      onChange={(e) => {
-                        const deg = parseFloat(e.target.value);
-                        let card = 'NORTH';
-                        if (deg >= 22.5 && deg < 67.5) card = 'NORTH-EAST';
-                        else if (deg >= 67.5 && deg < 112.5) card = 'EAST';
-                        else if (deg >= 112.5 && deg < 157.5) card = 'SOUTH-EAST';
-                        else if (deg >= 157.5 && deg < 202.5) card = 'SOUTH';
-                        else if (deg >= 202.5 && deg < 247.5) card = 'SOUTH-WEST';
-                        else if (deg >= 247.5 && deg < 292.5) card = 'WEST';
-                        else if (deg >= 292.5 && deg < 337.5) card = 'NORTH-WEST';
-                        setForm({ ...form, directionAngle: deg, cardinalDirection: card });
-                      }}
-                      className="w-full accent-police-500 cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-400 text-[10px] mb-1">Radius (m)</label>
-                    <input
-                      type="number"
-                      value={form.coverageRadiusMeters}
-                      onChange={(e) => setForm({ ...form, coverageRadiusMeters: parseFloat(e.target.value) || 100 })}
-                      className="glass-input w-20 font-mono text-xs py-1"
-                    />
+                    <div>
+                      <label className="block text-[#141413] font-medium mb-1">Owner Phone Contact</label>
+                      <input
+                        type="text"
+                        value={form.ownerContact}
+                        onChange={(e) => setForm({ ...form, ownerContact: e.target.value })}
+                        className="mc-input w-full font-mono text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Field of View Capture Spread Angle Width */}
-                <div className="pt-3 border-t border-slate-800 space-y-2">
-                  <div className="flex justify-between text-[11px]">
-                    <span className="font-semibold text-slate-300">Field of View (FOV) Capture Width Angle</span>
-                    <span className="font-mono font-bold text-amber-400">{form.fovAngle || 60}° Spread</span>
-                  </div>
-
-                  <div className="grid grid-cols-5 gap-1 text-[10px]">
-                    {[
-                      { label: '30° Spot', fov: 30 },
-                      { label: '60° Standard', fov: 60 },
-                      { label: '90° Wide', fov: 90 },
-                      { label: '120° Ultra', fov: 120 },
-                      { label: '360° Panoramic', fov: 360 },
-                    ].map((item) => (
+                {/* Location Controls */}
+                <div className="p-4 sm:p-5 rounded-[24px] bg-white border border-[#E5DFD9] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#141413] flex items-center gap-2 text-xs uppercase tracking-wider">
+                      <MapPin className="w-4 h-4 text-[#CF4500]" />
+                      Geospatial Coordinates
+                    </span>
+                    <div className="flex gap-2">
                       <button
-                        key={item.fov}
                         type="button"
-                        onClick={() => setForm({ ...form, fovAngle: item.fov })}
-                        className={`py-1 px-1.5 rounded border text-[9px] font-bold transition-all ${
-                          (form.fovAngle === item.fov)
-                            ? 'bg-amber-500 text-slate-950 border-amber-400'
-                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800'
+                        onClick={handleGetCurrentGPS}
+                        className="mc-btn-secondary text-xs py-1 px-3"
+                      >
+                        <Navigation className="w-3 h-3 text-[#3860BE]" />
+                        Auto GPS
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUseMapPicker(!useMapPicker)}
+                        className={`text-xs py-1 px-3 rounded-[20px] border font-medium ${
+                          useMapPicker ? 'bg-[#141413] text-white border-[#141413]' : 'bg-white text-[#141413] border-[#141413]'
                         }`}
                       >
-                        {item.label}
+                        {useMapPicker ? 'Close Map Picker' : 'Pick on Map'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {useMapPicker && (
+                    <div className="h-64 sm:h-72 w-full rounded-[24px] overflow-hidden my-2 border border-[#D1CDC7] relative">
+                      <div className="absolute top-2.5 left-3 right-3 z-[400] pointer-events-none flex justify-center">
+                        <div className="bg-[#141413]/90 backdrop-blur-xs text-[#F3F0EE] text-[11px] font-medium px-3.5 py-1 rounded-full shadow-md border border-white/10 flex items-center gap-1.5 pointer-events-auto">
+                          <span className="w-2 h-2 rounded-full bg-[#CF4500] animate-ping"></span>
+                          <span>Click anywhere on the map to set camera GPS coordinates</span>
+                        </div>
+                      </div>
+                      <CameraMap
+                        interactivePicker={true}
+                        center={[parseFloat(form.latitude) || 21.1458, parseFloat(form.longitude) || 79.0882]}
+                        selectedLocation={{ lat: parseFloat(form.latitude) || 21.1458, lng: parseFloat(form.longitude) || 79.0882 }}
+                        onMapClick={handleMapLocationSelect}
+                        zoom={15}
+                        autoFit={false}
+                      />
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[#141413] font-medium mb-1">Latitude <span className="text-[#CF4500]">*</span></label>
+                      <input
+                        type="number"
+                        step="0.00001"
+                        required
+                        value={form.latitude}
+                        onChange={(e) => setForm({ ...form, latitude: parseFloat(e.target.value) || 0 })}
+                        className="mc-input w-full font-mono text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[#141413] font-medium mb-1">Longitude <span className="text-[#CF4500]">*</span></label>
+                      <input
+                        type="number"
+                        step="0.00001"
+                        required
+                        value={form.longitude}
+                        onChange={(e) => setForm({ ...form, longitude: parseFloat(e.target.value) || 0 })}
+                        className="mc-input w-full font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Compass Direction Section */}
+                <div className="p-4 sm:p-5 rounded-[24px] bg-white border border-[#E5DFD9] space-y-3">
+                  <span className="font-bold text-[#141413] flex items-center gap-2 text-xs uppercase tracking-wider">
+                    <Compass className="w-4 h-4 text-[#3860BE]" />
+                    Lens Facing Direction ({form.directionAngle || 90}°)
+                  </span>
+
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: 'NORTH', angle: 0 },
+                      { label: 'EAST', angle: 90 },
+                      { label: 'SOUTH', angle: 180 },
+                      { label: 'WEST', angle: 270 },
+                    ].map((dir) => (
+                      <button
+                        key={dir.label}
+                        type="button"
+                        onClick={() => setForm({ ...form, cardinalDirection: dir.label, directionAngle: dir.angle })}
+                        className={`p-2 rounded-[14px] border text-[10px] font-medium transition-all ${
+                          form.directionAngle === dir.angle 
+                            ? 'bg-[#141413] text-white border-[#141413] shadow-xs' 
+                            : 'bg-white text-[#141413] border-[#E5DFD9] hover:bg-[#F3F0EE]'
+                        }`}
+                      >
+                        {dir.label}
                       </button>
                     ))}
                   </div>
                 </div>
-              </div>
+              </form>
+            </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={addCameraMutation.isPending}
-                  className="glass-button-primary"
-                >
-                  {addCameraMutation.isPending ? 'Submitting Survey...' : 'Submit Camera Survey'}
-                </button>
-              </div>
-            </form>
-          </div>
+            {/* Action Footer */}
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E5DFD9] bg-[#FCFBFA] sticky bottom-0 z-10">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="mc-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="surveyModalForm"
+                disabled={addCameraMutation.isPending}
+                className="mc-btn-primary"
+              >
+                {addCameraMutation.isPending ? 'Submitting...' : 'Submit Field Survey'}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

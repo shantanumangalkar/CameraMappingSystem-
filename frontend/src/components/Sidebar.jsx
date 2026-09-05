@@ -179,8 +179,8 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
 
   return (
     <>
-      {/* Desktop Persistent Sidebar with 32px stadium corners */}
-      <aside className="w-64 bg-[#141413] hidden md:flex flex-col shrink-0 select-none my-4 ml-6 rounded-[32px] shadow-mc-card overflow-hidden">
+      {/* Desktop Persistent Sticky Sidebar with Fixed Viewport Height */}
+      <aside className="w-64 bg-[#141413] hidden md:flex flex-col shrink-0 select-none sticky top-20 h-[calc(100vh-5.75rem)] max-h-[calc(100vh-5.75rem)] ml-4 lg:ml-6 rounded-[32px] shadow-mc-card overflow-hidden z-20">
         {content}
       </aside>
 

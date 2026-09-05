@@ -29,7 +29,7 @@ const ProtectedLayout = ({ children, allowedRoles }) => {
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} 
           isMobileSidebarOpen={isMobileSidebarOpen} 
         />
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-visible relative">
           <Sidebar 
             isMobileOpen={isMobileSidebarOpen} 
             onCloseMobile={() => setIsMobileSidebarOpen(false)} 
@@ -57,12 +57,12 @@ const ProtectedLayout = ({ children, allowedRoles }) => {
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)} 
         isMobileSidebarOpen={isMobileSidebarOpen} 
       />
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-visible relative">
         <Sidebar 
           isMobileOpen={isMobileSidebarOpen} 
           onCloseMobile={() => setIsMobileSidebarOpen(false)} 
         />
-        <main className="flex-1 p-3.5 sm:p-5 md:p-6 lg:p-7 overflow-y-auto w-full max-w-[1520px] mx-auto pb-24 md:pb-8">
+        <main className="flex-1 min-w-0 p-3.5 sm:p-5 md:p-6 lg:p-7 max-w-[1520px] mx-auto pb-24 md:pb-8">
           {children}
         </main>
       </div>

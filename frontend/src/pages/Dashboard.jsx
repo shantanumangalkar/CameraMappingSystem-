@@ -220,9 +220,9 @@ export const Dashboard = () => {
         </div>
       </div>
 
-      {/* KPI Cards: 40px Stadium containers with circular tokens and satellite arrows */}
+      {/* KPI Cards: 2 boxes per row on mobile, 3 on tablet, 6 on desktop */}
       {isUserAdmin && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2.5 sm:gap-3.5 md:gap-4">
           {cards.map((card, idx) => {
             const Icon = card.icon;
             return (
@@ -232,25 +232,25 @@ export const Dashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
                 onClick={() => card.path && navigate(card.path)}
-                className="mc-card p-4 sm:p-5 cursor-pointer hover:shadow-mc-elevated hover:border-[#D1CDC7] transition-all duration-200 flex flex-col justify-between group min-h-[148px]"
+                className="mc-card p-3 sm:p-4 md:p-5 cursor-pointer hover:shadow-mc-elevated hover:border-[#D1CDC7] transition-all duration-200 flex flex-col justify-between group min-h-[125px] sm:min-h-[148px]"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-[#696969] tracking-[-0.01em] line-clamp-1">{card.title}</span>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${card.accent}`}>
-                      <Icon className="w-4 h-4" />
+                  <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                    <span className="text-[11px] sm:text-xs font-semibold text-[#696969] tracking-[-0.01em] line-clamp-1">{card.title}</span>
+                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 ${card.accent}`}>
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </div>
                   </div>
 
-                  <p className="text-2xl sm:text-3xl font-medium text-[#141413] mt-3 tracking-[-0.02em]">
+                  <p className="text-xl sm:text-2xl md:text-3xl font-medium text-[#141413] mt-2 sm:mt-3 tracking-[-0.02em]">
                     {isStatsLoading ? '...' : card.value}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 mt-2 border-t border-[#E5DFD9] text-[11px] text-[#696969]">
-                  <span className="truncate">{card.sublabel}</span>
-                  <div className="w-6 h-6 rounded-full bg-white border border-[#E5DFD9] flex items-center justify-center group-hover:bg-[#141413] group-hover:text-white transition-colors">
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between pt-2 sm:pt-3 mt-1.5 sm:mt-2 border-t border-[#E5DFD9] text-[10px] sm:text-[11px] text-[#696969]">
+                  <span className="truncate pr-1">{card.sublabel}</span>
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white border border-[#E5DFD9] flex items-center justify-center group-hover:bg-[#141413] group-hover:text-white transition-colors shrink-0">
+                    <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </div>
                 </div>
               </motion.div>

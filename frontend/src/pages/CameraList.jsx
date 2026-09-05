@@ -269,57 +269,59 @@ export const CameraList = () => {
         </motion.div>
       )}
 
-      {/* Floating Pill Search & Filter Controls */}
-      <div className="bg-white border border-[#E5DFD9] rounded-full p-2 sm:p-2.5 shadow-mc-card flex flex-col md:flex-row items-center justify-between gap-3">
+      {/* Search & Filter Controls: Responsive Stadium Card on Mobile, Continuous Pill Bar on Desktop */}
+      <div className="bg-white border border-[#E5DFD9] rounded-[24px] md:rounded-full p-2.5 sm:p-3 md:p-2 shadow-mc-card flex flex-col md:flex-row items-center justify-between gap-2.5 md:gap-3">
         {/* Search Input */}
-        <div className="relative flex-1 w-full flex items-center pl-3">
+        <div className="relative flex-1 w-full flex items-center bg-[#F3F0EE]/60 md:bg-transparent rounded-full px-3.5 py-1.5 md:py-0 border border-[#E5DFD9] md:border-0">
           <Search className="w-4 h-4 text-[#696969] shrink-0" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by camera code, area, landmark, owner name..."
-            className="w-full bg-transparent text-sm text-[#141413] placeholder-[#696969] px-3 py-1.5 focus:outline-none"
+            className="w-full bg-transparent text-xs sm:text-sm text-[#141413] placeholder-[#696969] px-2.5 py-1 focus:outline-none"
           />
           {searchTerm && (
             <button 
               onClick={() => setSearchTerm('')} 
               aria-label="Clear search input"
-              className="text-[#696969] hover:text-[#141413] pr-3"
+              className="text-[#696969] hover:text-[#141413] pl-1"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Filter Dropdowns & View Mode Toggles */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto pr-1">
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            aria-label="Filter by Camera Hardware Type"
-            className="mc-input text-xs py-1.5 px-3 font-medium border-[#D1CDC7] text-[#141413] bg-[#FCFBFA]"
-          >
-            <option value="">All Hardware Types</option>
-            <option value="PTZ">PTZ (Pan-Tilt-Zoom)</option>
-            <option value="DOME">Dome Camera</option>
-            <option value="BULLET">Bullet Camera</option>
-            <option value="ANPR">ANPR (License Plate)</option>
-          </select>
+        {/* Filter Dropdowns & View Mode Toggles (Single clean horizontal row on mobile) */}
+        <div className="flex items-center justify-between w-full md:w-auto gap-2 px-1 md:px-0">
+          <div className="flex items-center gap-2 flex-1 md:flex-none">
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              aria-label="Filter by Camera Hardware Type"
+              className="mc-input text-xs py-1.5 px-2.5 sm:px-3 font-medium border-[#D1CDC7] text-[#141413] bg-[#FCFBFA] flex-1 md:flex-none max-w-[150px] sm:max-w-none truncate"
+            >
+              <option value="">All Hardware</option>
+              <option value="PTZ">PTZ</option>
+              <option value="DOME">Dome</option>
+              <option value="BULLET">Bullet</option>
+              <option value="ANPR">ANPR</option>
+            </select>
 
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            aria-label="Filter by Live Stream Status"
-            className="mc-input text-xs py-1.5 px-3 font-medium border-[#D1CDC7] text-[#141413] bg-[#FCFBFA]"
-          >
-            <option value="">All Stream Statuses</option>
-            <option value="ACTIVE">Online Only</option>
-            <option value="OFFLINE">Offline Only</option>
-          </select>
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              aria-label="Filter by Live Stream Status"
+              className="mc-input text-xs py-1.5 px-2.5 sm:px-3 font-medium border-[#D1CDC7] text-[#141413] bg-[#FCFBFA] flex-1 md:flex-none max-w-[140px] sm:max-w-none truncate"
+            >
+              <option value="">All Statuses</option>
+              <option value="ACTIVE">Online</option>
+              <option value="OFFLINE">Offline</option>
+            </select>
+          </div>
 
           {/* Cards vs Table Pill Toggle */}
-          <div className="flex items-center bg-[#F3F0EE] p-1 rounded-full border border-[#D1CDC7]">
+          <div className="flex items-center bg-[#F3F0EE] p-1 rounded-full border border-[#D1CDC7] shrink-0 ml-auto">
             <button
               onClick={() => setViewMode('cards')}
               className={`p-1.5 rounded-full transition-all ${
@@ -329,7 +331,7 @@ export const CameraList = () => {
               }`}
               title="Portrait Cards View"
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
             <button
               onClick={() => setViewMode('table')}
@@ -340,7 +342,7 @@ export const CameraList = () => {
               }`}
               title="Registry Table View"
             >
-              <TableIcon className="w-4 h-4" />
+              <TableIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>

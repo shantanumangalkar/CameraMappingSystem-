@@ -192,10 +192,10 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
         />
       )}
 
-      {/* Mobile Slide-over Drawer */}
+      {/* Mobile Slide-over Drawer (Opens from the right side) */}
       <aside 
-        className={`fixed top-0 bottom-0 left-0 w-80 max-w-[86vw] bg-[#141413] z-50 md:hidden shadow-2xl transition-transform duration-200 ease-in-out ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 bottom-0 right-0 w-80 max-w-[86vw] bg-[#141413] z-50 md:hidden shadow-2xl transition-transform duration-200 ease-in-out ${
+          isMobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {content}

@@ -7,7 +7,7 @@ import {
   FileSearch, 
   CheckCircle2, 
   ClipboardList, 
-  Menu
+  User
 } from 'lucide-react';
 
 export const BottomNav = ({ onOpenMobileMenu }) => {
@@ -72,17 +72,17 @@ export const BottomNav = ({ onOpenMobileMenu }) => {
           );
         })}
 
-        {/* Menu Drawer Trigger */}
+        {/* Profile Drawer Trigger (Opens user profile & full drawer) */}
         <button
           type="button"
           onClick={onOpenMobileMenu}
-          className="flex flex-col items-center justify-center min-w-[54px] py-1 px-2 rounded-full text-[#696969] hover:text-[#141413] transition-colors font-medium"
-          aria-label="Open Full Navigation Menu"
+          className="flex flex-col items-center justify-center min-w-[54px] py-1 px-2 rounded-full text-[#696969] hover:text-[#141413] transition-colors font-medium group"
+          aria-label="Open User Profile & Settings"
         >
-          <div className="p-1.5 rounded-full hover:bg-[#F3F0EE]">
-            <Menu className="w-4 h-4" />
+          <div className="w-6 h-6 rounded-full bg-[#141413] text-[#F3F0EE] flex items-center justify-center font-bold text-[10px] shadow-xs group-hover:scale-105 transition-transform">
+            {user?.fullName?.charAt(0) || <User className="w-3.5 h-3.5" />}
           </div>
-          <span className="text-[10px] tracking-tight mt-0.5">More</span>
+          <span className="text-[10px] tracking-tight mt-0.5 font-medium">Profile</span>
         </button>
       </nav>
     </div>

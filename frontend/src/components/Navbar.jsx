@@ -71,19 +71,14 @@ export const Navbar = ({ onToggleMobileSidebar, isMobileSidebarOpen }) => {
         {/* ========================================================= */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           
-          {/* MOBILE PROFILE SYMBOL (Toggles mobile drawer with profile & logout) */}
+          {/* MOBILE TOGGLE BUTTON (Placed cleanly at the right, opens right-side drawer) */}
           <button
             type="button"
             onClick={onToggleMobileSidebar}
-            className="md:hidden relative flex items-center justify-center active:scale-95 transition-all p-0.5 rounded-full"
-            aria-label="Open User Profile & Navigation Menu"
-            title="Open Profile & Menu"
+            className="md:hidden p-2 rounded-full text-[#141413] hover:bg-[#F3F0EE] active:scale-95 transition-all flex items-center justify-center shrink-0 border border-[#E5DFD9]"
+            aria-label="Toggle Navigation Menu"
           >
-            <div className="w-9 h-9 rounded-full bg-[#141413] text-[#F3F0EE] flex items-center justify-center font-bold text-xs shadow-xs border-2 border-white ring-1 ring-[#E5DFD9]">
-              {user?.fullName?.charAt(0) || <User className="w-4 h-4" />}
-            </div>
-            {/* Live operational online badge */}
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#10B981] border-2 border-white"></span>
+            {isMobileSidebarOpen ? <X className="w-5 h-5 text-[#CF4500]" /> : <Menu className="w-5 h-5" />}
           </button>
 
           {/* DESKTOP ROLE PILL, PROFILE CHIP & LOGOUT BUTTON */}

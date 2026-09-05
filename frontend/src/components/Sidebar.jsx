@@ -12,7 +12,8 @@ import {
   X, 
   User, 
   LogOut,
-  BadgeCheck
+  BadgeCheck,
+  Radio
 } from 'lucide-react';
 
 export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
@@ -43,8 +44,8 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
   };
 
   const content = (
-    <div className="flex flex-col justify-between h-full p-4 overflow-y-auto">
-      <div className="space-y-3.5">
+    <div className="flex flex-col justify-between h-full p-4 sm:p-5 overflow-y-auto space-y-4">
+      <div className="space-y-4">
         {/* Mobile Drawer Header with Logo & Close Toggle */}
         <div className="flex items-center justify-between md:hidden pb-3.5 border-b border-[#262627]">
           <div className="flex items-center gap-2.5">
@@ -98,9 +99,9 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
                 {userRole ? userRole.replace('ROLE_', '') : 'OFFICER'}
               </span>
             </div>
-            <p className="text-[11px] text-[#D1CDC7] flex items-center gap-1.5 truncate">
-              <Building2 className="w-3 h-3 text-[#CF4500] shrink-0" />
-              <span className="truncate">{user?.policeStationName || 'Central Metropolitan Police Command HQ'}</span>
+            <p className="text-[11px] text-[#D1CDC7] flex items-center gap-1.5 leading-snug">
+              <Building2 className="w-3.5 h-3.5 text-[#CF4500] shrink-0" />
+              <span>{user?.policeStationName || 'Central District Command Station'}</span>
             </p>
           </div>
         </div>
@@ -114,7 +115,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
         </div>
 
         {/* Navigation Items in Stadium/Pill Shape */}
-        <nav className="flex flex-col gap-1">
+        <nav className="flex flex-col gap-1.5">
           {visibleItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -123,7 +124,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
                 to={item.path}
                 onClick={onCloseMobile}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-full text-xs font-medium tracking-tight transition-all duration-150 ${
+                  `flex items-center gap-3 px-4 py-2.5 rounded-full text-xs font-medium tracking-tight transition-all duration-150 ${
                     isActive
                       ? 'bg-white text-[#141413] font-bold shadow-md'
                       : 'text-[#D1CDC7] hover:text-white hover:bg-white/5'
@@ -143,17 +144,50 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
             );
           })}
         </nav>
+
+        {/* Desktop Operational Telemetry & Active Radar Status (Eliminates dead void) */}
+        <div className="hidden md:block p-3.5 rounded-[22px] bg-[#1C1C1A] border border-white/10 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold tracking-[+0.06em] text-[#8C8882] uppercase flex items-center gap-1.5">
+              <Radio className="w-3 h-3 text-[#10B981] animate-pulse" />
+              LIVE GIS RADAR
+            </span>
+            <span className="text-[9px] font-mono font-bold text-[#10B981] px-2 py-0.5 rounded-full bg-[#10B981]/10 border border-[#10B981]/20">
+              ONLINE
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-center pt-0.5">
+            <div className="p-2 rounded-[14px] bg-white/5 border border-white/5">
+              <p className="text-[9px] text-[#8C8882] uppercase font-semibold">CCTNS Link</p>
+              <p className="text-xs font-mono font-bold text-white mt-0.5">SECURE</p>
+            </div>
+            <div className="p-2 rounded-[14px] bg-white/5 border border-white/5">
+              <p className="text-[9px] text-[#8C8882] uppercase font-semibold">Surveillance</p>
+              <p className="text-xs font-mono font-bold text-[#F37338] mt-0.5">ACTIVE</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Footer / Bottom Actions: Station precinct, Sign Out Button, and branding seal */}
-      <div className="space-y-2.5 pt-3 border-t border-[#262627] shrink-0">
-        {/* Desktop station indicator */}
-        <div className="hidden md:block px-3 py-1.5 rounded-[16px] bg-[#1C1C1A] border border-white/5 text-[11px] text-[#D1CDC7]">
-          <div className="flex items-center gap-1.5 text-[10px] text-[#696969] uppercase font-semibold">
-            <Building2 className="w-3 h-3 text-[#F37338]" />
-            <span>Station Precinct</span>
+      <div className="space-y-3 pt-3 border-t border-[#262627] shrink-0">
+        {/* Desktop station precinct indicator - NO TRUNCATION */}
+        <div className="hidden md:block p-3.5 rounded-[20px] bg-[#1C1C1A] border border-white/10 text-xs space-y-1.5">
+          <div className="flex items-center justify-between text-[10px] text-[#8C8882] uppercase font-semibold">
+            <span className="flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-[#F37338] shrink-0" />
+              Station Precinct
+            </span>
+            <span className="text-[9px] font-mono text-[#F37338] bg-[#F37338]/10 px-1.5 py-0.5 rounded border border-[#F37338]/20">HQ</span>
           </div>
-          <p className="font-mono text-white text-xs truncate mt-0.5">{user?.policeStationName || 'Central Metropolitan HQ'}</p>
+          <p className="font-semibold text-white text-xs leading-snug break-words">
+            {user?.policeStationName || 'Central District Command Station'}
+          </p>
+          <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-[#8C8882] font-mono">
+            <span>Badge: @{user?.username || 'officer1'}</span>
+            <span className="text-[#10B981]">Active Shift</span>
+          </div>
         </div>
 
         {/* PROMINENT LOGOUT / SIGN OUT BUTTON AT THE VERY BOTTOM */}
@@ -162,15 +196,15 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
             if (onCloseMobile) onCloseMobile();
             logout();
           }}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3.5 rounded-[16px] bg-[#CF4500] hover:bg-[#B53C00] active:scale-[0.98] text-white font-semibold text-xs tracking-tight shadow-md transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-[18px] bg-[#CF4500] hover:bg-[#B53C00] active:scale-[0.98] text-white font-semibold text-xs tracking-tight shadow-md transition-all cursor-pointer"
         >
-          <LogOut className="w-3.5 h-3.5" />
+          <LogOut className="w-4 h-4" />
           <span>Exit &amp; Sign Out</span>
         </button>
 
         {/* Official Seal */}
-        <div className="text-[#696969] px-1 flex items-center justify-between text-[10px] font-mono">
-          <span className="text-[#A8A49E] font-medium">CCTNS POLICE GIS</span>
+        <div className="text-[#8C8882] px-1 flex items-center justify-between text-[10px] font-mono">
+          <span className="text-[#D1CDC7] font-semibold tracking-wider">CCTNS POLICE GIS</span>
           <span>v2.4 SECURE</span>
         </div>
       </div>
@@ -179,8 +213,8 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
 
   return (
     <>
-      {/* Desktop Persistent Sticky Sidebar with Fixed, Constant Height */}
-      <aside className="w-64 bg-[#141413] hidden md:flex flex-col shrink-0 select-none sticky top-20 self-start h-[520px] max-h-[calc(100vh-6rem)] ml-4 lg:ml-6 rounded-[28px] shadow-mc-card overflow-hidden z-20">
+      {/* Desktop Persistent Sticky Sidebar with Full Viewport Height & Complete Operational Info */}
+      <aside className="w-64 lg:w-70 bg-[#141413] hidden md:flex flex-col shrink-0 select-none sticky top-20 self-start h-[calc(100vh-5.75rem)] max-h-[calc(100vh-5.75rem)] ml-4 lg:ml-6 rounded-[32px] border border-white/10 shadow-2xl overflow-hidden z-20">
         {content}
       </aside>
 

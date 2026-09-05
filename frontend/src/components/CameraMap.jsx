@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useAuth } from '../context/AuthContext';
-import { Camera, Shield, Eye, AlertTriangle, MapPin, Navigation, Compass, User, Phone, Lock, Building2, Radio, ArrowRight } from 'lucide-react';
+import { Camera, Shield, Eye, AlertTriangle, MapPin, Navigation, Compass, User, Phone, Lock, Building2, Radio, ArrowRight, Maximize2, Minimize2 } from 'lucide-react';
 
 // Helper to generate coordinates for a Field-of-View (FOV) sector wedge
 const getFovPolygonCoordinates = (lat, lon, directionAngle = 0, radiusMeters = 80, fovAngleDegrees = 60) => {
@@ -140,15 +140,15 @@ const createPickerPinIcon = () => {
   });
 };
 
-// Invalidate Leaflet map size on mount and container layout change
-const MapInvalidator = () => {
+// Invalidate Leaflet map size on mount, fullscreen toggle, and container layout change
+const MapInvalidator = ({ isFullscreen }) => {
   const map = useMap();
 
   useEffect(() => {
     map.invalidateSize();
-    const t1 = setTimeout(() => map.invalidateSize(), 120);
-    const t2 = setTimeout(() => map.invalidateSize(), 350);
-    const t3 = setTimeout(() => map.invalidateSize(), 700);
+    const t1 = setTimeout(() => map.invalidateSize(), 80);
+    const t2 = setTimeout(() => map.invalidateSize(), 220);
+    const t3 = setTimeout(() => map.invalidateSize(), 500);
 
     const resizeObserver = new ResizeObserver(() => {
       map.invalidateSize();
@@ -164,9 +164,51 @@ const MapInvalidator = () => {
       clearTimeout(t3);
       resizeObserver.disconnect();
     };
-  }, [map]);
+  }, [map, isFullscreen]);
 
   return null;
+};
+
+// Floating Fullscreen Expand/Minimize Control
+const FullscreenControl = ({ isFullscreen, onToggleFullscreen }) => {
+  const map = useMap();
+
+  const handleToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleFullscreen();
+    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 300);
+  };
+
+  return (
+    <div className="leaflet-top leaflet-right" style={{ zIndex: 1000, pointerEvents: 'auto' }}>
+      <div className="leaflet-control m-2.5 sm:m-3">
+        <button
+          type="button"
+          onClick={handleToggle}
+          title={isFullscreen ? "Exit Fullscreen (ESC)" : "Expand Fullscreen Map"}
+          className={`flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-full font-medium text-xs tracking-tight shadow-mc-card transition-all active:scale-95 border cursor-pointer ${
+            isFullscreen 
+              ? 'bg-[#CF4500] text-white hover:bg-[#B53C00] border-[#CF4500] ring-2 ring-white'
+              : 'bg-white/95 backdrop-blur-md text-[#141413] hover:bg-[#141413] hover:text-white border-[#E5DFD9]'
+          }`}
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white shrink-0" />
+              <span className="font-bold text-[11px] sm:text-xs">Exit Fullscreen</span>
+            </>
+          ) : (
+            <>
+              <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#CF4500] shrink-0" />
+              <span className="font-bold text-[11px] sm:text-xs">Expand Map</span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
 };
 
 // Auto pan to newly picked location
@@ -231,11 +273,32 @@ export const CameraMap = ({
   selectedLocation = null,
   selectedCameraId = null,
   interactivePicker = false,
-  autoFit = true
+  autoFit = true,
+  allowFullscreen = true
 }) => {
   const { user } = useAuth();
   const userRole = typeof user?.role === 'object' ? user?.role?.name : user?.role;
   const isSurveyor = userRole === 'ROLE_SURVEY_PERSON';
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    if (isFullscreen) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isFullscreen]);
 
   const defaultStations = stations.length > 0 ? stations : [
     { id: 101, stationCode: 'PS-DEL-01', stationName: 'Delhi Police Central HQ (ITO)', latitude: 28.6280, longitude: 77.2410, address: 'ITO, New Delhi', contactNumber: '+91-11-23490000', jurisdictionZone: 'Central Delhi' },
@@ -257,7 +320,22 @@ export const CameraMap = ({
   const validCrimeLoc = crimeLocation && isValidLat(crimeLocation.lat) && isValidLng(crimeLocation.lng) ? crimeLocation : null;
 
   return (
-    <div className={`w-full h-full ${interactivePicker ? 'min-h-[220px] cursor-crosshair' : 'min-h-[340px]'} relative rounded-[28px] sm:rounded-[36px] overflow-hidden border border-[#E5DFD9] shadow-mc-card bg-[#F3F0EE]`}>
+    <div 
+      className={
+        isFullscreen 
+          ? 'fixed inset-0 z-[9999] w-screen h-screen rounded-none border-0 shadow-2xl bg-[#F3F0EE] overflow-hidden' 
+          : `w-full h-full ${interactivePicker ? 'min-h-[220px] cursor-crosshair' : 'min-h-[340px]'} relative rounded-[28px] sm:rounded-[36px] overflow-hidden border border-[#E5DFD9] shadow-mc-card bg-[#F3F0EE]`
+      }
+    >
+      {/* Fullscreen Mobile & Desktop Floating Badge */}
+      {isFullscreen && (
+        <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-[1000] pointer-events-none flex items-center gap-2 bg-[#141413]/90 backdrop-blur-md px-3 sm:px-3.5 py-1.5 rounded-full text-white border border-white/10 shadow-lg text-[11px] sm:text-xs font-semibold">
+          <img src="/police-logo.png" alt="Police Shield" className="w-3.5 h-3.5 sm:w-4 sm:h-4 object-contain" />
+          <span className="truncate max-w-[160px] sm:max-w-none">POLICE GIS RECONNAISSANCE</span>
+          <span className="hidden sm:inline-block text-[9px] font-mono text-[#F37338] bg-[#F37338]/20 px-1.5 py-0.5 rounded-full border border-[#F37338]/30">FULLSCREEN</span>
+        </div>
+      )}
+
       <MapContainer 
         center={safeCenter} 
         zoom={zoom} 
@@ -269,9 +347,17 @@ export const CameraMap = ({
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
 
-        {/* Dynamic viewport & size recalculations */}
-        <MapInvalidator />
+        {/* Dynamic viewport & size recalculations on mount and fullscreen toggle */}
+        <MapInvalidator isFullscreen={isFullscreen} />
         <MapPanToSelected selectedLocation={validSelectedLoc} active={interactivePicker} />
+
+        {/* Fullscreen Expand/Collapse Control */}
+        {allowFullscreen && (
+          <FullscreenControl 
+            isFullscreen={isFullscreen} 
+            onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} 
+          />
+        )}
 
         <AutoBounds 
           cameras={cameras} 

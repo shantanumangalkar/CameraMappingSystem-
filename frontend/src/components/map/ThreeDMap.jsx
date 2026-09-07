@@ -872,6 +872,30 @@ export const ThreeDMap = ({
     }
   }, [selectedCameraId, cameras]);
 
+  // Auto-focus on crimeLocation when an investigation case is clicked/selected
+  const lastCrimeLocRef = useRef({ lat: null, lng: null, focusKey: null });
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !crimeLocation?.lat || !crimeLocation?.lng) return;
+    const targetLat = parseFloat(crimeLocation.lat);
+    const targetLng = parseFloat(crimeLocation.lng);
+    if (isNaN(targetLat) || isNaN(targetLng)) return;
+
+    const isNewCoords = lastCrimeLocRef.current.lat !== targetLat || lastCrimeLocRef.current.lng !== targetLng;
+    const isKeyTrigger = focusKey !== undefined && focusKey !== null && lastCrimeLocRef.current.focusKey !== focusKey;
+
+    if (isKeyTrigger || isNewCoords) {
+      lastCrimeLocRef.current = { lat: targetLat, lng: targetLng, focusKey };
+      map.flyTo({
+        center: [targetLng, targetLat],
+        zoom: 16.2,
+        pitch: 55,
+        duration: 1000,
+        essential: true
+      });
+    }
+  }, [crimeLocation?.lat, crimeLocation?.lng, focusKey]);
+
   // Auto-focus when effectiveLiveLoc updates
   useEffect(() => {
     const map = mapRef.current;

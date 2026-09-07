@@ -92,7 +92,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/auth/**",
-                    "/media/**"
+                    "/media/**",
+                    "/cameras/seed-nagpur",
+                    "/investigations/seed-nagpur"
                 ).permitAll()
                 // Swagger only accessible to ADMIN role (not public)
                 .requestMatchers(

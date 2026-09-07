@@ -339,13 +339,14 @@ export const Dashboard = () => {
           <CameraMap 
             cameras={cameras} 
             stations={stations}
-            center={[21.1458, 79.0882]}
-            zoom={13.5}
+            center={activeCase?.latitude && activeCase?.longitude ? [activeCase.latitude, activeCase.longitude] : [21.1458, 79.0882]}
+            zoom={15}
             crimeLocation={crimeLocationProps}
             searchRadius={activeCase?.searchRadiusMeters || 500}
             selectedCameraId={selectedCamera?.id}
             onSelectCamera={(cam) => setSelectedCamera(cam)}
-            autoFit={false} 
+            autoFit={true}
+            focusKey={activeCase?.id}
           />
         </div>
       </div>

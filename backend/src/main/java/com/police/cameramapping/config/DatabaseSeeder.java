@@ -30,6 +30,8 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final CameraRepository cameraRepository;
     private final PasswordEncoder passwordEncoder;
     private final com.police.cameramapping.service.NagpurCameraSeederService nagpurCameraSeederService;
+    private final com.police.cameramapping.service.NagpurInvestigationSeederService nagpurInvestigationSeederService;
+    private final com.police.cameramapping.domain.repository.InvestigationCaseRepository investigationCaseRepository;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -40,7 +42,12 @@ public class DatabaseSeeder implements CommandLineRunner {
         User admin = seedAdminUser(station);
         User officer = seedOfficerUser(station);
         User surveyor = seedSurveyorUser(station);
-        nagpurCameraSeederService.reseed50NagpurCameras();
+        if (cameraRepository.count() < 50) {
+            nagpurCameraSeederService.reseed50NagpurCameras();
+        }
+        if (investigationCaseRepository.count() < 8) {
+            nagpurInvestigationSeederService.reseedNagpurInvestigations();
+        }
     }
 
     private void seedRoles() {

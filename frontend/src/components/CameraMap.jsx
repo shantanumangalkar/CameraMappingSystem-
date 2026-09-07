@@ -289,26 +289,25 @@ const MapFlyToTarget = ({ target, trigger }) => {
   return null;
 };
 
-// Auto-adjust map viewport only when explicit focusKey triggers or crime scene changes (never locks or forces user back)
-const AutoBounds = ({ crimeLocation, autoFit, focusKey }) => {
+// Auto-adjust map viewport when explicit focusKey triggers or crime scene changes
+const AutoBounds = ({ crimeLocation, autoFit = true, focusKey }) => {
   const map = useMap();
   const lastTargetRef = React.useRef({ lat: null, lng: null, focusKey: null });
 
   useEffect(() => {
-    if (!autoFit) return;
-    const targetLat = crimeLocation?.lat;
-    const targetLng = crimeLocation?.lng;
+    const targetLat = parseFloat(crimeLocation?.lat);
+    const targetLng = parseFloat(crimeLocation?.lng);
 
-    if (targetLat && targetLng) {
+    if (!isNaN(targetLat) && !isNaN(targetLng)) {
       const isNewCoords = lastTargetRef.current.lat !== targetLat || lastTargetRef.current.lng !== targetLng;
       const isExplicitFocus = focusKey !== undefined && focusKey !== null && lastTargetRef.current.focusKey !== focusKey;
 
-      if (isNewCoords || isExplicitFocus) {
+      if (isExplicitFocus || (isNewCoords && autoFit) || lastTargetRef.current.lat === null) {
         lastTargetRef.current = { lat: targetLat, lng: targetLng, focusKey };
         try {
-          map.flyTo([targetLat, targetLng], 15.5, { animate: true, duration: 0.8 });
+          map.flyTo([targetLat, targetLng], 16, { animate: true, duration: 0.9 });
         } catch (e) {
-          map.setView([targetLat, targetLng], 15.5);
+          map.setView([targetLat, targetLng], 16);
         }
       }
     }

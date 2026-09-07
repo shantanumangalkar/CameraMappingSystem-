@@ -456,8 +456,8 @@ export const InvestigationView = () => {
         <div className="h-[380px] sm:h-[460px] md:h-[540px] w-full relative rounded-[28px] sm:rounded-[36px] overflow-hidden border border-[#E5DFD9] bg-[#F3F0EE]">
           <CameraMap
             cameras={nearbyCameras}
-            center={[21.1458, 79.0882]}
-            zoom={13.5}
+            center={[safeActiveLat, safeActiveLng]}
+            zoom={15}
             crimeLocation={activeCase ? { lat: safeActiveLat, lng: safeActiveLng, name: activeCase.title } : null}
             searchRadius={activeCase?.searchRadiusMeters || 500}
             interactivePicker={placeMode}
@@ -465,7 +465,7 @@ export const InvestigationView = () => {
             selectedLocation={placeMode ? userGpsLocation : null}
             selectedCameraId={viewingCamera?.id}
             onSelectCamera={(cam) => setViewingCamera(cam)}
-            autoFit={false}
+            autoFit={true}
             focusKey={focusTrigger}
           />
         </div>

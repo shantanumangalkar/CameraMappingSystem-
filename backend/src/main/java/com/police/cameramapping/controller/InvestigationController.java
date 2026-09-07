@@ -4,7 +4,9 @@ import com.police.cameramapping.common.dto.ApiResponse;
 import com.police.cameramapping.dto.investigation.CaseCameraAttachRequest;
 import com.police.cameramapping.dto.investigation.InvestigationCaseRequest;
 import com.police.cameramapping.dto.investigation.InvestigationCaseResponse;
+import com.police.cameramapping.domain.model.InvestigationCase;
 import com.police.cameramapping.service.InvestigationService;
+import com.police.cameramapping.service.NagpurInvestigationSeederService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,6 +18,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/investigations")
 @RequiredArgsConstructor
@@ -23,6 +28,28 @@ import org.springframework.web.bind.annotation.*;
 public class InvestigationController {
 
     private final InvestigationService investigationService;
+    private final NagpurInvestigationSeederService nagpurInvestigationSeederService;
+
+    @PostMapping("/seed-nagpur")
+    @Operation(summary = "Purge and reseed 8 realistic Nagpur police investigations with PostGIS linked CCTV nodes")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> seedNagpurInvestigations() {
+        List<InvestigationCase> seeded = nagpurInvestigationSeederService.reseedNagpurInvestigations();
+        Map<String, Object> result = Map.of(
+                "message", "Successfully purged previous records and seeded " + seeded.size() + " realistic Nagpur investigation cases.",
+                "totalCases", seeded.size(),
+                "cases", seeded.stream().map(c -> Map.of(
+                        "id", c.getId(),
+                        "caseNumber", c.getCaseNumber(),
+                        "firNumber", c.getFirNumber() != null ? c.getFirNumber() : "",
+                        "title", c.getTitle(),
+                        "crimeType", c.getCrimeType(),
+                        "location", c.getCrimeLocationName() != null ? c.getCrimeLocationName() : "",
+                        "coords", c.getLatitude() + ", " + c.getLongitude(),
+                        "status", c.getStatus().name()
+                )).toList()
+        );
+        return ResponseEntity.ok(ApiResponse.success(result, "Nagpur investigation cases seeded successfully"));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'POLICE_OFFICER', 'SURVEY_PERSON')")

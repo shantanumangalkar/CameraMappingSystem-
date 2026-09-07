@@ -91,6 +91,8 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/health/**",
+                    "/health",
                     "/auth/**",
                     "/media/**",
                     "/cameras/seed-nagpur",

@@ -23,7 +23,9 @@ import {
   ExternalLink,
   Radio,
   Eye,
-  Crosshair
+  Crosshair,
+  Plus,
+  Minus
 } from 'lucide-react';
 
 /**
@@ -310,8 +312,6 @@ export const ThreeDMap = ({
       minPitch: VIDARBHA_CONFIG.minPitch,
       attributionControl: false
     });
-
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: true }), 'bottom-right');
 
     map.on('pitch', () => setCurrentPitch(Math.round(map.getPitch())));
     map.on('rotate', () => setCurrentBearing(Math.round(map.getBearing())));
@@ -1107,13 +1107,34 @@ export const ThreeDMap = ({
         </button>
       </div>
 
-      {/* BOTTOM RIGHT: Compact MapCompass safely above zoom buttons */}
-      <div className="absolute bottom-20 right-2.5 sm:bottom-20 sm:right-3 z-10 pointer-events-auto scale-75 sm:scale-85 origin-bottom-right">
+      {/* BOTTOM RIGHT: Unified Compass & Tactical Zoom Controls (Single non-overlapping vertical flex stack) */}
+      <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 z-10 pointer-events-auto flex flex-col items-center gap-1.5 scale-75 sm:scale-85 origin-bottom-right">
         <MapCompass
           bearing={currentBearing}
           onResetNorth={handleResetNorth}
           title="Surveillance Compass (Click to reset North)"
         />
+
+        {/* Tactical Dark Glass Zoom Controls */}
+        <div className="flex flex-col items-center bg-[#141413]/90 backdrop-blur-md rounded-2xl border border-white/15 overflow-hidden shadow-xl text-white">
+          <button
+            type="button"
+            onClick={() => mapRef.current?.zoomIn({ duration: 250 })}
+            className="p-2 hover:bg-white/10 active:bg-white/20 transition-all text-white/90 hover:text-white"
+            title="Zoom In"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          <div className="h-px w-5 bg-white/15" />
+          <button
+            type="button"
+            onClick={() => mapRef.current?.zoomOut({ duration: 250 })}
+            className="p-2 hover:bg-white/10 active:bg-white/20 transition-all text-white/90 hover:text-white"
+            title="Zoom Out"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -27,6 +27,18 @@ import java.util.List;
 public class CameraController {
 
     private final CameraService cameraService;
+    private final com.police.cameramapping.service.NagpurCameraSeederService nagpurCameraSeederService;
+
+    @PostMapping("/reseed-nagpur-50")
+    @Operation(summary = "Purge existing cameras and reseed exactly 50 realistic Nagpur cameras")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> reseedNagpurCameras() {
+        var cameras = nagpurCameraSeederService.reseed50NagpurCameras();
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("totalCameras", cameras.size());
+        result.put("city", "Nagpur");
+        result.put("message", "Purged existing cameras and seeded 50 realistic cameras in Nagpur with complete parameters.");
+        return ResponseEntity.ok(ApiResponse.success(result, "50 Nagpur cameras reseeded successfully"));
+    }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SURVEY_PERSON', 'POLICE_OFFICER')")
@@ -85,6 +97,27 @@ public class CameraController {
             @RequestParam(defaultValue = "500") double radiusMeters) {
         List<CameraResponse> response = cameraService.getNearbyCameras(latitude, longitude, radiusMeters);
         return ResponseEntity.ok(ApiResponse.success(response, "Found " + response.size() + " cameras within radius"));
+    }
+
+    @GetMapping("/owner-lookup")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SURVEY_PERSON', 'POLICE_OFFICER')")
+    @Operation(summary = "Surveyor Owner Verification: Lookup existing registered cameras and summary by owner mobile number")
+    public ResponseEntity<ApiResponse<OwnerSummaryResponse>> lookupOwnerByContact(@RequestParam String contact) {
+        OwnerSummaryResponse response = cameraService.lookupOwnerByContact(contact);
+        String msg = response.isOwnerFound() 
+                ? "Found " + response.getTotalCameras() + " cameras registered under owner: " + response.getOwnerName()
+                : "No registered cameras found for contact: " + contact;
+        return ResponseEntity.ok(ApiResponse.success(response, msg));
+    }
+
+    @GetMapping("/check-duplicate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SURVEY_PERSON', 'POLICE_OFFICER')")
+    @Operation(summary = "Surveyor Duplicate Check: Check if serial number or camera code is already registered")
+    public ResponseEntity<ApiResponse<DuplicateCheckResponse>> checkDuplicate(
+            @RequestParam(required = false) String serialNumber,
+            @RequestParam(required = false) String cameraCode) {
+        DuplicateCheckResponse response = cameraService.checkDuplicate(serialNumber, cameraCode);
+        return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
     }
 
     @PutMapping("/{id}")

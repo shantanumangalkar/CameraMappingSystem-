@@ -12,8 +12,7 @@ import {
   X, 
   User, 
   LogOut,
-  BadgeCheck,
-  Radio
+  BadgeCheck
 } from 'lucide-react';
 
 export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
@@ -44,10 +43,10 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
   };
 
   const content = (
-    <div className="flex flex-col justify-between h-full p-4 sm:p-5 overflow-y-auto space-y-4">
-      <div className="space-y-4">
+    <div className="flex flex-col justify-between h-full p-3.5 sm:p-4 overflow-y-auto no-scrollbar space-y-2.5">
+      <div className="space-y-2.5">
         {/* Mobile Drawer Header with Logo & Close Toggle */}
-        <div className="flex items-center justify-between md:hidden pb-3.5 border-b border-[#262627]">
+        <div className="flex items-center justify-between md:hidden pb-3 border-b border-[#262627]">
           <div className="flex items-center gap-2.5">
             <img 
               src="/police-logo.png" 
@@ -144,30 +143,6 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
             );
           })}
         </nav>
-
-        {/* Desktop Operational Telemetry & Active Radar Status (Eliminates dead void) */}
-        <div className="hidden md:block p-3.5 rounded-[22px] bg-[#1C1C1A] border border-white/10 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-[+0.06em] text-[#8C8882] uppercase flex items-center gap-1.5">
-              <Radio className="w-3 h-3 text-[#10B981] animate-pulse" />
-              LIVE GIS RADAR
-            </span>
-            <span className="text-[9px] font-mono font-bold text-[#10B981] px-2 py-0.5 rounded-full bg-[#10B981]/10 border border-[#10B981]/20">
-              ONLINE
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-center pt-0.5">
-            <div className="p-2 rounded-[14px] bg-white/5 border border-white/5">
-              <p className="text-[9px] text-[#8C8882] uppercase font-semibold">CCTNS Link</p>
-              <p className="text-xs font-mono font-bold text-white mt-0.5">SECURE</p>
-            </div>
-            <div className="p-2 rounded-[14px] bg-white/5 border border-white/5">
-              <p className="text-[9px] text-[#8C8882] uppercase font-semibold">Surveillance</p>
-              <p className="text-xs font-mono font-bold text-[#F37338] mt-0.5">ACTIVE</p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Footer / Bottom Actions: Station precinct, Sign Out Button, and branding seal */}
@@ -213,22 +188,22 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
 
   return (
     <>
-      {/* Desktop Persistent Sticky Sidebar with Full Viewport Height & Complete Operational Info */}
-      <aside className="w-64 lg:w-70 bg-[#141413] hidden md:flex flex-col shrink-0 select-none sticky top-20 self-start h-[calc(100vh-5.75rem)] max-h-[calc(100vh-5.75rem)] ml-4 lg:ml-6 rounded-[32px] border border-white/10 shadow-2xl overflow-hidden z-20">
+      {/* Desktop Persistent Sticky Sidebar with Full Viewport Height & Clean Gap Below Navbar */}
+      <aside className="w-64 lg:w-70 bg-[#141413] hidden md:flex flex-col shrink-0 select-none sticky top-[6.25rem] self-start h-[calc(100vh-7.75rem)] max-h-[calc(100vh-7.75rem)] ml-4 lg:ml-6 mt-2 mb-4 rounded-[32px] border border-white/10 shadow-2xl overflow-hidden no-scrollbar z-20">
         {content}
       </aside>
 
       {/* Mobile Slide-over Drawer Backdrop */}
       {isMobileOpen && (
         <div 
-          className="fixed inset-0 bg-[#141413]/70 backdrop-blur-xs z-50 md:hidden transition-opacity"
+          className="fixed inset-0 bg-[#141413]/70 backdrop-blur-xs z-[120] md:hidden transition-opacity"
           onClick={onCloseMobile}
         />
       )}
 
       {/* Mobile Slide-over Drawer (Opens from the right side) */}
       <aside 
-        className={`fixed top-0 bottom-0 right-0 w-80 max-w-[86vw] bg-[#141413] z-50 md:hidden shadow-2xl transition-transform duration-200 ease-in-out ${
+        className={`fixed top-0 bottom-0 right-0 w-80 max-w-[86vw] bg-[#141413] z-[120] md:hidden shadow-2xl transition-transform duration-200 ease-in-out no-scrollbar ${
           isMobileOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

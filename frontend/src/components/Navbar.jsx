@@ -35,7 +35,7 @@ export const Navbar = ({ onToggleMobileSidebar, isMobileSidebarOpen }) => {
   };
 
   return (
-    <div className="w-full px-3 sm:px-6 pt-3 sm:pt-4 sticky top-0 z-30 pointer-events-none">
+    <div className="w-full px-3 sm:px-6 pt-3 sm:pt-4 sticky top-0 z-[100] pointer-events-none">
       <header className="h-14 sm:h-16 md:h-18 max-w-[1520px] mx-auto bg-white/95 backdrop-blur-md rounded-full px-4 sm:px-6 flex items-center justify-between border border-[#E5DFD9] shadow-mc-nav pointer-events-auto transition-all">
         
         {/* ========================================================= */}

@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class CameraResponse {
     private Long id;
     private String cameraCode;
+    private String serialNumber;
     private String cameraName;
     private CameraType cameraType;
     private Double latitude;

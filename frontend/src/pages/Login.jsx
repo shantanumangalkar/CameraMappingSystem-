@@ -92,11 +92,11 @@ export const Login = () => {
             </div>
 
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium tracking-[-0.02em] leading-tight text-white drop-shadow-md">
-              CCTV Mapping &amp; Crime Reconnaissance
+              Smart CCTV Mapping for Safer Cities
             </h1>
 
             <p className="text-xs sm:text-sm text-[#D1CDC7] font-normal leading-relaxed max-w-lg drop-shadow-sm">
-              Geospatial intelligence platform connecting municipal and private CCTV feeds for police investigations and rapid response.
+              A centralized platform connecting citizens, administrators, and police through verified CCTV camera locations and intelligent map-based access.
             </p>
 
             {/* Feature Telemetry Pills */}

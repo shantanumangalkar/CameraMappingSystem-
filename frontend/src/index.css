@@ -117,23 +117,14 @@ body {
   }
 }
 
-/* Custom Soft Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
 }
 
-::-webkit-scrollbar-track {
-  background: #F3F0EE;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #D1CDC7;
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #696969;
+.no-scrollbar {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
 }
 
 /* Leaflet Container in Stadium Frame */
@@ -177,3 +168,83 @@ body {
 .leaflet-container a.leaflet-popup-close-button:hover {
   color: #141413;
 }
+
+/* MapLibre 3D Popup Styling Matching Leaflet Stadium Theme */
+.maplibregl-popup {
+  z-index: 100 !important;
+  font-family: inherit;
+  pointer-events: auto;
+}
+
+.maplibregl-popup-content {
+  border-radius: 24px !important;
+  box-shadow: 0 16px 40px rgba(20, 20, 19, 0.16), 0 2px 6px rgba(20, 20, 19, 0.06) !important;
+  border: 1px solid #E5DFD9 !important;
+  background: #FCFBFA !important;
+  padding: 14px !important;
+  overflow: hidden !important;
+  line-height: 1.4 !important;
+}
+
+.maplibregl-popup-close-button {
+  top: 10px !important;
+  right: 12px !important;
+  color: #696969 !important;
+  font-size: 18px !important;
+  padding: 4px 6px !important;
+  border-radius: 9999px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: #141413 !important;
+  background-color: #F3F0EE !important;
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: #FCFBFA !important;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: #FCFBFA !important;
+}
+
+/* Tactical MapLibre Zoom Controls (Dark Surveillance Theme) */
+.maplibregl-ctrl-group {
+  background-color: rgba(20, 20, 19, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden !important;
+}
+
+.maplibregl-ctrl-group button {
+  width: 34px !important;
+  height: 34px !important;
+  border: none !important;
+  background-color: transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(2) !important;
+}
+
+.maplibregl-ctrl-group button:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.maplibregl-ctrl-bottom-right {
+  bottom: 10px !important;
+  right: 10px !important;
+  margin: 0 !important;
+  z-index: 15 !important;
+}
+
+

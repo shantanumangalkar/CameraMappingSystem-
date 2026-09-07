@@ -90,6 +90,9 @@ public class Camera extends BaseEntity {
     @Column(name = "qr_code_url", length = 500)
     private String qrCodeUrl;
 
+    @Column(name = "serial_number", length = 100)
+    private String serialNumber;
+
     @Column(name = "owner_name", length = 150)
     private String ownerName;
 

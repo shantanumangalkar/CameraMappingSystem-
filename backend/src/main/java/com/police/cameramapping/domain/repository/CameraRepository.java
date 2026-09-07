@@ -21,6 +21,16 @@ public interface CameraRepository extends JpaRepository<Camera, Long>, JpaSpecif
 
     Boolean existsByCameraCode(String cameraCode);
 
+    Optional<Camera> findBySerialNumber(String serialNumber);
+
+    Boolean existsBySerialNumber(String serialNumber);
+
+    List<Camera> findByOwnerContactAndIsDeletedFalse(String ownerContact);
+
+    @Query("SELECT c FROM Camera c WHERE c.isDeleted = false AND " +
+           "(REPLACE(REPLACE(REPLACE(c.ownerContact, ' ', ''), '-', ''), '+91', '') LIKE CONCAT('%', :cleanContact, '%'))")
+    List<Camera> searchByCleanContact(@Param("cleanContact") String cleanContact);
+
     Page<Camera> findByVerificationStatusAndIsDeletedFalse(VerificationStatus status, Pageable pageable);
 
     Page<Camera> findBySurveyor_IdAndIsDeletedFalse(Long surveyorId, Pageable pageable);

@@ -12,6 +12,7 @@ import {
   Compass, 
   Navigation, 
   Crosshair, 
+  RefreshCw, 
   Trash2, 
   AlertTriangle, 
   Building2, 
@@ -26,7 +27,6 @@ import {
   Shield,
   Target,
   Clock,
-  QrCode,
   FileText,
   Check,
   Filter,
@@ -66,6 +66,20 @@ export const InvestigationView = () => {
   const [localCases, setLocalCases] = useState([]);
   const [userGpsLocation, setUserGpsLocation] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [isLocatingGPS, setIsLocatingGPS] = useState(false);
+  const [gpsSuccess, setGpsSuccess] = useState(false);
+  const [focusTrigger, setFocusTrigger] = useState(0);
+  const mapSectionRef = React.useRef(null);
+
+  const handleFocusCase = (caseItem) => {
+    if (!caseItem) return;
+    setSelectedCaseId(caseItem.id);
+    setIsCaseRemoved(false);
+    setFocusTrigger((prev) => prev + 1);
+    if (mapSectionRef.current) {
+      mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   // Auto-fetch user live GPS on mount
   React.useEffect(() => {
@@ -104,11 +118,12 @@ export const InvestigationView = () => {
       const res = await api.get('/investigations?size=100').catch(() => null);
       return res?.data?.content || [];
     },
-    refetchInterval: 3000,
+    refetchInterval: 15000,
   });
 
   // Filter cases strictly for police officer if ROLE_POLICE_OFFICER
   const allCasesData = (rawCasesData || []).filter((c) => {
+    if (!c) return false;
     if (!isPoliceOfficer) return true;
     return (
       c.assignedOfficerId === user?.id ||
@@ -202,21 +217,37 @@ export const InvestigationView = () => {
   };
 
   const handleGetCurrentGPS = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setIsCaseRemoved(false);
-          setForm((prev) => ({
-            ...prev,
-            latitude: Math.round(position.coords.latitude * 100000) / 100000,
-            longitude: Math.round(position.coords.longitude * 100000) / 100000,
-          }));
-        },
-        () => {
-          alert('GPS location capture failed. Click directly on the map to place crime pin.');
-        }
-      );
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
     }
+    setIsLocatingGPS(true);
+    setGpsSuccess(false);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setIsCaseRemoved(false);
+        const lat = Math.round(position.coords.latitude * 100000) / 100000;
+        const lng = Math.round(position.coords.longitude * 100000) / 100000;
+        setUserGpsLocation({ lat, lng });
+        setForm((prev) => ({
+          ...prev,
+          latitude: lat,
+          longitude: lng,
+          crimeLocationName: prev.crimeLocationName && !prev.crimeLocationName.startsWith('Incident Pin')
+            ? prev.crimeLocationName
+            : `Patrol GPS Scene Pin (${lat}, ${lng})`
+        }));
+        setIsLocatingGPS(false);
+        setGpsSuccess(true);
+        setTimeout(() => setGpsSuccess(false), 4000);
+      },
+      (err) => {
+        console.warn('GPS location error:', err);
+        setIsLocatingGPS(false);
+        alert('GPS location capture failed. Please check browser location permissions or click directly on the map to place crime scene pin.');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
 
   const fetchedCasesList = allCasesData || [];
@@ -236,34 +267,42 @@ export const InvestigationView = () => {
     queryKey: ['crime-nearby-cameras', safeActiveLat, safeActiveLng, activeCase?.searchRadiusMeters],
     queryFn: () => api.get(`/cameras/nearby?latitude=${safeActiveLat}&longitude=${safeActiveLng}&radiusMeters=${activeCase?.searchRadiusMeters || 500}`),
     enabled: !!activeCase,
-    refetchInterval: 3000,
+    refetchInterval: 15000,
   });
 
   const rawNearby = nearbyData?.data?.content || nearbyData?.data || nearbyData || [];
-  const nearbyCameras = activeCase ? (Array.isArray(rawNearby) ? rawNearby : []) : [];
+  const nearbyCameras = activeCase ? (Array.isArray(rawNearby) ? rawNearby.filter(Boolean) : []) : [];
 
-  // Haversine Distance Calculator (in meters)
+  // Haversine Distance Calculator (in meters) with numeric protection and clamping
   const getDistanceMeters = (lat1, lon1, lat2, lon2) => {
-    if (typeof lat1 !== 'number' || typeof lon1 !== 'number' || typeof lat2 !== 'number' || typeof lon2 !== 'number') return null;
+    const nLat1 = parseFloat(lat1);
+    const nLon1 = parseFloat(lon1);
+    const nLat2 = parseFloat(lat2);
+    const nLon2 = parseFloat(lon2);
+    if (isNaN(nLat1) || isNaN(nLon1) || isNaN(nLat2) || isNaN(nLon2)) return null;
+
     const R = 6371e3;
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+    const φ1 = (nLat1 * Math.PI) / 180;
+    const φ2 = (nLat2 * Math.PI) / 180;
+    const Δφ = ((nLat2 - nLat1) * Math.PI) / 180;
+    const Δλ = ((nLon2 - nLon1) * Math.PI) / 180;
     const a =
       Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
       Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const clampedA = Math.min(1, Math.max(0, a));
+    const c = 2 * Math.atan2(Math.sqrt(clampedA), Math.sqrt(1 - clampedA));
     return Math.round(R * c);
   };
 
   // Filter nearby cameras by keyword and status
   const filteredNearbyCameras = nearbyCameras
+    .filter(Boolean)
     .map(cam => {
       const dist = getDistanceMeters(safeActiveLat, safeActiveLng, cam.latitude, cam.longitude);
       return { ...cam, distanceToIncident: dist };
     })
     .filter(cam => {
+      if (!cam) return false;
       const matchKeyword = !nearbySearchFilter || 
         cam.cameraCode?.toLowerCase().includes(nearbySearchFilter.toLowerCase()) ||
         cam.cameraName?.toLowerCase().includes(nearbySearchFilter.toLowerCase()) ||
@@ -400,7 +439,7 @@ export const InvestigationView = () => {
       </div>
 
       {/* Live Crime Scene GIS Map with Connective Orbital Trajectory Lines */}
-      <div className="mc-stadium p-4 sm:p-6 md:p-7 flex flex-col gap-3">
+      <div ref={mapSectionRef} className="mc-stadium p-4 sm:p-6 md:p-7 flex flex-col gap-3 scroll-mt-20">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-[#E5DFD9] gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <Target className="w-4 h-4 text-[#CF4500] shrink-0" />
@@ -417,14 +456,17 @@ export const InvestigationView = () => {
         <div className="h-[380px] sm:h-[460px] md:h-[540px] w-full relative rounded-[28px] sm:rounded-[36px] overflow-hidden border border-[#E5DFD9] bg-[#F3F0EE]">
           <CameraMap
             cameras={nearbyCameras}
+            center={[21.1458, 79.0882]}
+            zoom={13.5}
             crimeLocation={activeCase ? { lat: safeActiveLat, lng: safeActiveLng, name: activeCase.title } : null}
             searchRadius={activeCase?.searchRadiusMeters || 500}
             interactivePicker={placeMode}
             onMapClick={handleMapClickToPlaceCrime}
-            selectedLocation={userGpsLocation}
+            selectedLocation={placeMode ? userGpsLocation : null}
             selectedCameraId={viewingCamera?.id}
             onSelectCamera={(cam) => setViewingCamera(cam)}
-            autoFit={true}
+            autoFit={false}
+            focusKey={focusTrigger}
           />
         </div>
       </div>
@@ -624,7 +666,7 @@ export const InvestigationView = () => {
                   <button
                     onClick={() => setViewingCamera(cam)}
                     className="mc-btn-secondary text-xs py-2 px-3"
-                    title="Inspect Node Specs & QR"
+                    title="Inspect Node Specs"
                   >
                     <Eye className="w-3.5 h-3.5 text-[#3860BE]" />
                     <span>Inspect</span>
@@ -694,10 +736,7 @@ export const InvestigationView = () => {
               return (
                 <div
                   key={c.id || c.caseNumber}
-                  onClick={() => {
-                    setSelectedCaseId(c.id);
-                    setIsCaseRemoved(false);
-                  }}
+                  onClick={() => handleFocusCase(c)}
                   className={`border rounded-[32px] p-5 sm:p-6 space-y-3 cursor-pointer transition-all ${
                     isSelected 
                       ? 'border-[#141413] shadow-mc-card ring-2 ring-[#141413]/10 bg-white' 
@@ -748,8 +787,7 @@ export const InvestigationView = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedCaseId(c.id);
-                        setIsCaseRemoved(false);
+                        handleFocusCase(c);
                       }}
                       className="satellite-cta w-8 h-8 sm:w-9 sm:h-9"
                       title="Focus Incident GIS"
@@ -784,10 +822,7 @@ export const InvestigationView = () => {
                       className={`transition-colors cursor-pointer ${
                         isSelected ? 'bg-white font-semibold' : 'hover:bg-white/60'
                       }`}
-                      onClick={() => {
-                        setSelectedCaseId(c.id);
-                        setIsCaseRemoved(false);
-                      }}
+                      onClick={() => handleFocusCase(c)}
                     >
                       <td className="p-4">
                         <span className="font-mono font-bold text-[#141413] block">{c.caseNumber}</span>
@@ -817,10 +852,9 @@ export const InvestigationView = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedCaseId(c.id);
-                            setIsCaseRemoved(false);
+                            handleFocusCase(c);
                           }}
-                          className="mc-btn-secondary text-[11px] py-1 px-3 ml-auto"
+                          className="mc-btn-secondary text-[11px] py-1 px-3 ml-auto hover:bg-[#141413] hover:text-white transition-all shadow-xs"
                         >
                           Focus Radar
                         </button>
@@ -1012,19 +1046,7 @@ export const InvestigationView = () => {
               </div>
             </div>
 
-            {/* QR Code Tag */}
-            <div className="bg-[#F3F0EE] p-4 rounded-[24px] border border-[#E5DFD9] text-center space-y-2">
-              <p className="text-xs font-semibold text-[#141413] flex items-center justify-center gap-1.5">
-                <QrCode className="w-4 h-4 text-[#3860BE]" />
-                Digital Hardware Tag QR Code
-              </p>
-              <img
-                src={viewingCamera.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${viewingCamera.cameraCode}`}
-                alt="QR Code"
-                className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-[16px] border border-[#D1CDC7] bg-white p-1.5 shadow-sm"
-              />
-              <p className="text-[10px] text-[#696969] font-mono">{viewingCamera.cameraCode}</p>
-            </div>
+
           </motion.div>
         </div>
       )}
@@ -1131,14 +1153,39 @@ export const InvestigationView = () => {
                       <MapPin className="w-3.5 h-3.5 text-[#CF4500]" />
                       Crime Scene Coordinates
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => setModalMapPicker(!modalMapPicker)}
-                      className="mc-btn-secondary text-[10px] py-1 px-2.5"
-                    >
-                      {modalMapPicker ? 'Close Map' : 'Select on Map'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleGetCurrentGPS}
+                        disabled={isLocatingGPS}
+                        className="mc-btn-secondary text-[10px] py-1 px-2.5 flex items-center gap-1"
+                        title="Auto-detect crime scene coordinates via device GPS sensor"
+                      >
+                        {isLocatingGPS ? (
+                          <RefreshCw className="w-3 h-3 animate-spin text-[#CF4500]" />
+                        ) : (
+                          <Navigation className="w-3 h-3 text-[#3860BE]" />
+                        )}
+                        <span>{isLocatingGPS ? 'Locating...' : 'Auto GPS'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalMapPicker(!modalMapPicker)}
+                        className={`text-[10px] py-1 px-2.5 rounded-[20px] border font-medium transition-all ${
+                          modalMapPicker ? 'bg-[#141413] text-white border-[#141413]' : 'bg-white text-[#141413] border-[#141413]'
+                        }`}
+                      >
+                        {modalMapPicker ? 'Close Map' : 'Select on Map'}
+                      </button>
+                    </div>
                   </div>
+
+                  {gpsSuccess && (
+                    <div className="p-2 rounded-[14px] bg-[#EAF7EE] text-[#0A7334] text-[11px] font-medium flex items-center gap-2 animate-fadeIn">
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Crime scene coordinates auto-set to your current device GPS location.</span>
+                    </div>
+                  )}
 
                   {modalMapPicker && (
                     <div className="h-64 sm:h-72 w-full rounded-[24px] overflow-hidden my-2 border border-[#E5DFD9] relative">

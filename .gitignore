@@ -20,6 +20,7 @@ backend/.mvn/wrapper/maven-wrapper.jar
 backend/*.jar
 backend/*.war
 backend/*.ear
+backend/uploads/
 
 # IDE files
 .idea/

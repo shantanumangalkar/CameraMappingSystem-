@@ -14,15 +14,28 @@
       content="
         default-src 'self';
         script-src 'self' 'unsafe-inline' https://unpkg.com;
+        worker-src 'self' blob:;
+        child-src 'self' blob:;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com;
-        font-src 'self' https://fonts.gstatic.com;
+        font-src 'self' https://fonts.gstatic.com https://tiles.openfreemap.org https://*.openfreemap.org data:;
         img-src 'self' data: blob:
           https://*.tile.openstreetmap.org
           https://*.basemaps.cartocdn.com
+          https://tiles.openfreemap.org
+          https://*.openfreemap.org
+          https://server.arcgisonline.com
+          https://*.arcgisonline.com
           https://*.supabase.co
           https://api.qrserver.com;
         connect-src 'self'
           http://localhost:8088
+          https://tiles.openfreemap.org
+          https://*.openfreemap.org
+          https://server.arcgisonline.com
+          https://*.arcgisonline.com
+          https://*.tile.openstreetmap.org
+          https://*.basemaps.cartocdn.com
+          https://demotiles.maplibre.org
           https://*.supabase.co
           https://*.pooler.supabase.com;
         frame-ancestors 'none';

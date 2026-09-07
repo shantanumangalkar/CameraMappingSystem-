@@ -29,6 +29,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final PoliceStationRepository policeStationRepository;
     private final CameraRepository cameraRepository;
     private final PasswordEncoder passwordEncoder;
+    private final com.police.cameramapping.service.NagpurCameraSeederService nagpurCameraSeederService;
 
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -39,7 +40,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         User admin = seedAdminUser(station);
         User officer = seedOfficerUser(station);
         User surveyor = seedSurveyorUser(station);
-        seedSampleCameras(station, surveyor);
+        nagpurCameraSeederService.reseed50NagpurCameras();
     }
 
     private void seedRoles() {
@@ -258,8 +259,10 @@ public class DatabaseSeeder implements CommandLineRunner {
             Point geom = geometryFactory.createPoint(new Coordinate(lon, lat));
 
             if (cameraRepository.findByCameraCode(code).isEmpty()) {
+                String serialNumber = "SN-" + code.replace("CAM-", "CCTV-");
                 Camera cam = Camera.builder()
                         .cameraCode(code)
+                        .serialNumber(serialNumber)
                         .cameraName(name)
                         .cameraType(type)
                         .latitude(lat)

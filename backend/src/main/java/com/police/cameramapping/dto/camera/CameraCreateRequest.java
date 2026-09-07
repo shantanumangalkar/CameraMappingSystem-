@@ -15,6 +15,8 @@ public class CameraCreateRequest {
     @NotBlank(message = "Camera name is required")
     private String cameraName;
 
+    private String serialNumber;
+
     @NotNull(message = "Camera type is required")
     private CameraType cameraType;
 

@@ -2,27 +2,52 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, Polygon, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { useAuth } from '../context/AuthContext';
-import { Camera, Shield, Eye, AlertTriangle, MapPin, Navigation, Compass, User, Phone, Lock, Building2, Radio, ArrowRight, Maximize2, Minimize2 } from 'lucide-react';
+import { Camera, Shield, Eye, AlertTriangle, MapPin, Navigation, Compass, User, Phone, Lock, Building2, Radio, ArrowRight, Maximize2, Minimize2, RotateCcw, Crosshair } from 'lucide-react';
+import { ThreeDMap } from './map/ThreeDMap';
+import { MapCompass } from './map/MapCompass';
+import { CameraDossierModal } from './CameraDossierModal';
 
 // Helper to generate coordinates for a Field-of-View (FOV) sector wedge
 const getFovPolygonCoordinates = (lat, lon, directionAngle = 0, radiusMeters = 80, fovAngleDegrees = 60) => {
-  if (!lat || !lon) return [];
-  const points = [[lat, lon]];
-  const startAngle = directionAngle - fovAngleDegrees / 2;
-  const endAngle = directionAngle + fovAngleDegrees / 2;
-  const step = (endAngle - startAngle) / 8;
+  const numLat = parseFloat(lat);
+  const numLon = parseFloat(lon);
+  const numRadius = parseFloat(radiusMeters) || 80;
+  const numDir = parseFloat(directionAngle) || 0;
+  const numFov = parseFloat(fovAngleDegrees) || 60;
+
+  if (isNaN(numLat) || isNaN(numLon) || numFov <= 0) return [];
+
+  // Full 360-degree fisheye / omnidirectional view
+  if (numFov >= 360) {
+    const circlePoints = [];
+    const metersPerLatDegree = 111320;
+    const metersPerLonDegree = 111320 * Math.cos((numLat * Math.PI) / 180);
+    for (let deg = 0; deg < 360; deg += 15) {
+      const rad = (deg * Math.PI) / 180;
+      const ptLat = numLat + (numRadius * Math.sin(rad)) / metersPerLatDegree;
+      const ptLon = numLon + (numRadius * Math.cos(rad)) / metersPerLonDegree;
+      circlePoints.push([ptLat, ptLon]);
+    }
+    circlePoints.push(circlePoints[0]);
+    return circlePoints;
+  }
+
+  const startAngle = numDir - numFov / 2;
+  const endAngle = numDir + numFov / 2;
+  const step = Math.max(0.5, (endAngle - startAngle) / 8);
 
   const metersPerLatDegree = 111320;
-  const metersPerLonDegree = 111320 * Math.cos((lat * Math.PI) / 180);
+  const metersPerLonDegree = 111320 * Math.cos((numLat * Math.PI) / 180);
 
-  for (let a = startAngle; a <= endAngle; a += step) {
+  const points = [[numLat, numLon]];
+  for (let a = startAngle; a <= endAngle + 0.001; a += step) {
     const rad = ((90 - a) * Math.PI) / 180;
-    const ptLat = lat + (radiusMeters * Math.sin(rad)) / metersPerLatDegree;
-    const ptLon = lon + (radiusMeters * Math.cos(rad)) / metersPerLonDegree;
+    const ptLat = numLat + (numRadius * Math.sin(rad)) / metersPerLatDegree;
+    const ptLon = numLon + (numRadius * Math.cos(rad)) / metersPerLonDegree;
     points.push([ptLat, ptLon]);
   }
 
-  points.push([lat, lon]);
+  points.push([numLat, numLon]);
   return points;
 };
 
@@ -140,19 +165,35 @@ const createPickerPinIcon = () => {
   });
 };
 
-// Invalidate Leaflet map size on mount, fullscreen toggle, and container layout change
+// Invalidate Leaflet map size on mount, fullscreen toggle, and container layout change safely
 const MapInvalidator = ({ isFullscreen }) => {
   const map = useMap();
 
   useEffect(() => {
-    map.invalidateSize();
-    const t1 = setTimeout(() => map.invalidateSize(), 80);
-    const t2 = setTimeout(() => map.invalidateSize(), 220);
-    const t3 = setTimeout(() => map.invalidateSize(), 500);
-
-    const resizeObserver = new ResizeObserver(() => {
+    try {
       map.invalidateSize();
+    } catch (e) {
+      // ignore
+    }
+    const t1 = setTimeout(() => {
+      try { map.invalidateSize(); } catch (e) {}
+    }, 150);
+    const t2 = setTimeout(() => {
+      try { map.invalidateSize(); } catch (e) {}
+    }, 400);
+
+    let rafId = null;
+    const resizeObserver = new ResizeObserver(() => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        try {
+          map.invalidateSize();
+        } catch (e) {
+          // container might be unmounting
+        }
+      });
     });
+
     const container = map.getContainer();
     if (container) {
       resizeObserver.observe(container);
@@ -161,7 +202,7 @@ const MapInvalidator = ({ isFullscreen }) => {
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      clearTimeout(t3);
+      if (rafId) cancelAnimationFrame(rafId);
       resizeObserver.disconnect();
     };
   }, [map, isFullscreen]);
@@ -222,21 +263,56 @@ const MapPanToSelected = ({ selectedLocation, active }) => {
   return null;
 };
 
-// Auto-adjust map viewport
-const AutoBounds = ({ cameras, stations, crimeLocation, selectedLocation, autoFit }) => {
+// Smoothly fly and focus on camera when clicked or selected
+const MapFocusOnCamera = ({ camera }) => {
   const map = useMap();
+  useEffect(() => {
+    if (camera?.latitude && camera?.longitude) {
+      const numLat = parseFloat(camera.latitude);
+      const numLng = parseFloat(camera.longitude);
+      if (!isNaN(numLat) && !isNaN(numLng)) {
+        map.flyTo([numLat, numLng], 16.5, { animate: true, duration: 0.8 });
+      }
+    }
+  }, [camera, map]);
+  return null;
+};
+
+// Smoothly fly to target coordinates upon explicit user action (e.g. Live GPS or Reset to Nagpur)
+const MapFlyToTarget = ({ target, trigger }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (trigger > 0 && target && target.length >= 2) {
+      map.flyTo([target[0], target[1]], target[2] || 16, { animate: true, duration: 0.9 });
+    }
+  }, [trigger, target, map]);
+  return null;
+};
+
+// Auto-adjust map viewport only when explicit focusKey triggers or crime scene changes (never locks or forces user back)
+const AutoBounds = ({ crimeLocation, autoFit, focusKey }) => {
+  const map = useMap();
+  const lastTargetRef = React.useRef({ lat: null, lng: null, focusKey: null });
 
   useEffect(() => {
     if (!autoFit) return;
-    if (crimeLocation?.lat && crimeLocation?.lng) {
-      map.setView([crimeLocation.lat, crimeLocation.lng], 15);
-      return;
+    const targetLat = crimeLocation?.lat;
+    const targetLng = crimeLocation?.lng;
+
+    if (targetLat && targetLng) {
+      const isNewCoords = lastTargetRef.current.lat !== targetLat || lastTargetRef.current.lng !== targetLng;
+      const isExplicitFocus = focusKey !== undefined && focusKey !== null && lastTargetRef.current.focusKey !== focusKey;
+
+      if (isNewCoords || isExplicitFocus) {
+        lastTargetRef.current = { lat: targetLat, lng: targetLng, focusKey };
+        try {
+          map.flyTo([targetLat, targetLng], 15.5, { animate: true, duration: 0.8 });
+        } catch (e) {
+          map.setView([targetLat, targetLng], 15.5);
+        }
+      }
     }
-    if (selectedLocation?.lat && selectedLocation?.lng) {
-      map.setView([selectedLocation.lat, selectedLocation.lng], 15);
-      return;
-    }
-  }, [crimeLocation, selectedLocation, autoFit, map]);
+  }, [crimeLocation?.lat, crimeLocation?.lng, autoFit, focusKey, map]);
 
   return null;
 };
@@ -264,8 +340,8 @@ const MapClickListener = ({ onMapClick }) => {
 export const CameraMap = ({ 
   cameras = [], 
   stations = [],
-  center = [28.6139, 77.2090], 
-  zoom = 14, 
+  center = [21.1458, 79.0882], // Default open in Nagpur region (Zero Mile / Sitabuldi HQ)
+  zoom = 13.5, 
   crimeLocation = null,
   searchRadius = 500,
   onSelectCamera,
@@ -273,14 +349,68 @@ export const CameraMap = ({
   selectedLocation = null,
   selectedCameraId = null,
   interactivePicker = false,
-  autoFit = true,
-  allowFullscreen = true
+  autoFit = false,
+  allowFullscreen = true,
+  focusKey = null,
+  defaultViewMode = '2d'
 }) => {
   const { user } = useAuth();
   const userRole = typeof user?.role === 'object' ? user?.role?.name : user?.role;
   const isSurveyor = userRole === 'ROLE_SURVEY_PERSON';
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [viewMode, setViewMode] = useState(defaultViewMode); // '2d' | '3d'
+  const [dossierCamera, setDossierCamera] = useState(null);
+  const [liveLocation, setLiveLocation] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [flyTarget, setFlyTarget] = useState(null);
+  const [flyTrigger, setFlyTrigger] = useState(0);
+
+  const handleGetLiveLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = Math.round(pos.coords.latitude * 100000) / 100000;
+        const lng = Math.round(pos.coords.longitude * 100000) / 100000;
+        const loc = { lat, lng };
+        setLiveLocation(loc);
+        setIsLocating(false);
+        setFlyTarget([lat, lng, 16.5]);
+        setFlyTrigger(prev => prev + 1);
+      },
+      (err) => {
+        console.warn('Live location error:', err);
+        setIsLocating(false);
+        alert('Unable to retrieve your live GPS location. Please check browser location permissions.');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handleResetNagpur = () => {
+    setLiveLocation(null);
+    setFlyTarget([21.1458, 79.0882, 13.5]);
+    setFlyTrigger(prev => prev + 1);
+  };
+
+  // Synchronize dossierCamera when selectedCameraId changes
+  useEffect(() => {
+    if (selectedCameraId && cameras.length > 0) {
+      const found = cameras.find(c => c.id === selectedCameraId);
+      if (found) {
+        setDossierCamera(found);
+      }
+    }
+  }, [selectedCameraId, cameras]);
+
+  const handleSelectCamera = (cam) => {
+    setDossierCamera(cam);
+    if (onSelectCamera) onSelectCamera(cam);
+  };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -301,19 +431,17 @@ export const CameraMap = ({
   }, [isFullscreen]);
 
   const defaultStations = stations.length > 0 ? stations : [
-    { id: 101, stationCode: 'PS-DEL-01', stationName: 'Delhi Police Central HQ (ITO)', latitude: 28.6280, longitude: 77.2410, address: 'ITO, New Delhi', contactNumber: '+91-11-23490000', jurisdictionZone: 'Central Delhi' },
-    { id: 102, stationCode: 'PS-DEL-02', stationName: 'Connaught Place Police Station', latitude: 28.6328, longitude: 77.2197, address: 'Parliament Street, New Delhi', contactNumber: '+91-11-23340000', jurisdictionZone: 'NDMC Zone' },
-    { id: 103, stationCode: 'PS-MUM-01', stationName: 'Mumbai City Police Commissionerate HQ', latitude: 18.9452, longitude: 72.8336, address: 'Crawford Market, Fort, Mumbai', contactNumber: '+91-22-22620111', jurisdictionZone: 'Greater Mumbai' },
-    { id: 104, stationCode: 'PS-BLR-01', stationName: 'Bengaluru City Police Commissionerate', latitude: 12.9818, longitude: 77.5975, address: 'Infantry Road, Bengaluru', contactNumber: '+91-80-22942222', jurisdictionZone: 'Bengaluru Urban' },
     { id: 105, stationCode: 'PS-NGP-01', stationName: 'Nagpur Police Commissionerate HQ', latitude: 21.1524, longitude: 79.0801, address: 'Civil Lines, Nagpur', contactNumber: '+91-712-2560300', jurisdictionZone: 'Nagpur City HQ' },
-    { id: 106, stationCode: 'PS-NGP-02', stationName: 'Sitabuldi Police Station', latitude: 21.1458, longitude: 79.0882, address: 'Main Road, Sitabuldi, Nagpur', contactNumber: '+91-712-2522000', jurisdictionZone: 'Central Nagpur' }
+    { id: 106, stationCode: 'PS-NGP-02', stationName: 'Sitabuldi Police Station', latitude: 21.1458, longitude: 79.0882, address: 'Main Road, Sitabuldi, Nagpur', contactNumber: '+91-712-2522000', jurisdictionZone: 'Central Nagpur' },
+    { id: 107, stationCode: 'PS-AMR-01', stationName: 'Amravati City Police Commissionerate', latitude: 20.9320, longitude: 77.7523, address: 'Camp, Amravati', contactNumber: '+91-721-2551000', jurisdictionZone: 'Amravati Precinct' },
+    { id: 101, stationCode: 'PS-DEL-01', stationName: 'Delhi Police Central HQ (ITO)', latitude: 28.6280, longitude: 77.2410, address: 'ITO, New Delhi', contactNumber: '+91-11-23490000', jurisdictionZone: 'Central Delhi' }
   ];
 
   const isValidLat = (val) => typeof val === 'number' && !isNaN(val) && val >= -90 && val <= 90;
   const isValidLng = (val) => typeof val === 'number' && !isNaN(val) && val >= -180 && val <= 180;
 
-  const safeCenterLat = isValidLat(center?.[0]) ? center[0] : 28.6139;
-  const safeCenterLng = isValidLng(center?.[1]) ? center[1] : 77.2090;
+  const safeCenterLat = isValidLat(center?.[0]) ? center[0] : 21.1458;
+  const safeCenterLng = isValidLng(center?.[1]) ? center[1] : 79.0882;
   const safeCenter = [safeCenterLat, safeCenterLng];
 
   const validSelectedLoc = selectedLocation && isValidLat(selectedLocation.lat) && isValidLng(selectedLocation.lng) ? selectedLocation : null;
@@ -324,24 +452,112 @@ export const CameraMap = ({
       className={
         isFullscreen 
           ? 'fixed inset-0 z-[9999] w-screen h-screen rounded-none border-0 shadow-2xl bg-[#F3F0EE] overflow-hidden' 
-          : `w-full h-full ${interactivePicker ? 'min-h-[220px] cursor-crosshair' : 'min-h-[340px]'} relative rounded-[28px] sm:rounded-[36px] overflow-hidden border border-[#E5DFD9] shadow-mc-card bg-[#F3F0EE]`
+          : `w-full h-full ${interactivePicker ? 'min-h-[220px] cursor-crosshair' : 'min-h-[340px]'} relative isolate rounded-[28px] sm:rounded-[36px] overflow-hidden border border-[#E5DFD9] shadow-mc-card bg-[#F3F0EE]`
       }
     >
-      {/* Fullscreen Mobile & Desktop Floating Badge */}
-      {isFullscreen && (
-        <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-[1000] pointer-events-none flex items-center gap-2 bg-[#141413]/90 backdrop-blur-md px-3 sm:px-3.5 py-1.5 rounded-full text-white border border-white/10 shadow-lg text-[11px] sm:text-xs font-semibold">
-          <img src="/police-logo.png" alt="Police Shield" className="w-3.5 h-3.5 sm:w-4 sm:h-4 object-contain" />
-          <span className="truncate max-w-[160px] sm:max-w-none">POLICE GIS RECONNAISSANCE</span>
-          <span className="hidden sm:inline-block text-[9px] font-mono text-[#F37338] bg-[#F37338]/20 px-1.5 py-0.5 rounded-full border border-[#F37338]/30">FULLSCREEN</span>
+      {/* UNIFIED TOP BAR (2D Leaflet Mode): Non-overlapping responsive header */}
+      {viewMode === '2d' && (
+        <div className="absolute top-2.5 inset-x-2.5 sm:top-3 sm:inset-x-3 z-[1000] pointer-events-none flex items-center justify-between gap-1.5 sm:gap-2">
+          {/* Left: Tactical 2D Badge */}
+          <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 bg-[#141413]/90 backdrop-blur-md px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-white border border-white/10 shadow-lg text-[10px] sm:text-[11px] font-semibold shrink-0">
+            <img src="/police-logo.png" alt="Police Shield" className="w-3.5 h-3.5 object-contain shrink-0" />
+            <span className="font-bold tracking-tight">2D GRID</span>
+            <span className="text-[9px] font-mono text-[#F37338] bg-[#F37338]/20 px-1.5 py-0.5 rounded-full border border-[#F37338]/30">
+              NAGPUR
+            </span>
+          </div>
+
+          {/* Right: Mode Switcher & Fullscreen Expand */}
+          <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
+            {!interactivePicker && (
+              <div className="flex items-center bg-[#141413]/90 backdrop-blur-md p-0.5 rounded-full border border-white/15 shadow-lg">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('2d')}
+                  className={`px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold transition-all ${
+                    viewMode === '2d'
+                      ? 'bg-white text-[#141413] shadow-sm'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  2D
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('3d')}
+                  className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-bold transition-all ${
+                    viewMode === '3d'
+                      ? 'bg-[#CF4500] text-white shadow-sm'
+                      : 'text-white/70 hover:text-white'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+                  <span>3D</span>
+                </button>
+              </div>
+            )}
+
+            {allowFullscreen && (
+              <button
+                type="button"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                title={isFullscreen ? "Exit Fullscreen (ESC)" : "Expand Fullscreen Map"}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-medium text-[10px] sm:text-[11px] shadow-mc-card transition-all active:scale-95 border cursor-pointer ${
+                  isFullscreen 
+                    ? 'bg-[#CF4500] text-white hover:bg-[#B53C00] border-[#CF4500]'
+                    : 'bg-white/95 backdrop-blur-md text-[#141413] hover:bg-[#141413] hover:text-white border-[#E5DFD9]'
+                }`}
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize2 className="w-3 h-3 text-white shrink-0" />
+                    <span className="hidden sm:inline font-bold">Exit</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3 h-3 text-[#CF4500] shrink-0" />
+                    <span className="hidden sm:inline font-bold">Expand</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      <MapContainer 
-        center={safeCenter} 
-        zoom={zoom} 
-        scrollWheelZoom={true} 
-        className="w-full h-full"
-      >
+      {viewMode === '3d' ? (
+        <ThreeDMap
+          cameras={cameras}
+          stations={defaultStations}
+          center={safeCenter}
+          zoom={zoom}
+          crimeLocation={validCrimeLoc}
+          searchRadius={searchRadius}
+          onSelectCamera={handleSelectCamera}
+          onMapClick={onMapClick}
+          selectedLocation={validSelectedLoc}
+          liveLocation={liveLocation}
+          onGetLiveLocation={handleGetLiveLocation}
+          isLocating={isLocating}
+          selectedCameraId={selectedCameraId}
+          interactivePicker={interactivePicker}
+          autoFit={autoFit}
+          allowFullscreen={allowFullscreen}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={() => setIsFullscreen(!isFullscreen)}
+          focusKey={focusKey}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+        />
+      ) : (
+        <MapContainer 
+          center={safeCenter} 
+          zoom={zoom} 
+          scrollWheelZoom={true} 
+          attributionControl={false}
+          zoomControl={false}
+          className="w-full h-full"
+        >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
@@ -350,63 +566,64 @@ export const CameraMap = ({
         {/* Dynamic viewport & size recalculations on mount and fullscreen toggle */}
         <MapInvalidator isFullscreen={isFullscreen} />
         <MapPanToSelected selectedLocation={validSelectedLoc} active={interactivePicker} />
-
-        {/* Fullscreen Expand/Collapse Control */}
-        {allowFullscreen && (
-          <FullscreenControl 
-            isFullscreen={isFullscreen} 
-            onToggleFullscreen={() => setIsFullscreen(!isFullscreen)} 
-          />
-        )}
+        <MapFocusOnCamera camera={dossierCamera} />
+        <MapFlyToTarget target={flyTarget} trigger={flyTrigger} />
 
         <AutoBounds 
-          cameras={cameras} 
-          stations={defaultStations}
           crimeLocation={crimeLocation} 
-          selectedLocation={selectedLocation} 
           autoFit={autoFit} 
+          focusKey={focusKey}
         />
 
         {interactivePicker && <MapClickListener onMapClick={onMapClick} />}
 
-        {/* Selected / Live Patrol Location Marker */}
-        {validSelectedLoc && (
-          <>
-            <Marker 
-              position={[validSelectedLoc.lat, validSelectedLoc.lng]} 
-              icon={interactivePicker ? createPickerPinIcon() : createLiveGpsIcon()}
-            >
-              <Popup>
-                <div className="p-3 text-[#141413] text-xs font-semibold space-y-1.5 min-w-[210px]">
-                  <div className="flex items-center gap-1.5 text-[#141413] font-mono text-[11px] font-bold border-b border-[#E5DFD9] pb-1">
-                    <span className={`w-2 h-2 rounded-full ${interactivePicker ? 'bg-[#CF4500]' : 'bg-[#F37338]'} animate-ping`}></span>
-                    <span>{interactivePicker ? 'SELECTED REGISTRATION POINT' : 'PATROL GPS LOCATION'}</span>
-                  </div>
-                  <p className="text-[#696969] font-mono text-[11px] leading-relaxed">
-                    Lat: <span className="text-[#141413] font-bold">{validSelectedLoc.lat.toFixed(5)}</span><br/>
-                    Lng: <span className="text-[#141413] font-bold">{validSelectedLoc.lng.toFixed(5)}</span>
-                  </p>
-                  {interactivePicker && (
-                    <p className="text-[10px] text-[#CF4500] font-sans font-semibold pt-0.5">
-                      ✓ Location locked (Click anywhere to relocate)
+        {/* Location Marker - ONLY when interactivePicker is active or when user requests Live GPS */}
+        {((interactivePicker && validSelectedLoc) || liveLocation) && (() => {
+          const displayLoc = liveLocation || validSelectedLoc;
+          const isLive = Boolean(liveLocation && !interactivePicker);
+          return (
+            <>
+              <Marker 
+                position={[displayLoc.lat, displayLoc.lng]} 
+                icon={interactivePicker ? createPickerPinIcon() : createLiveGpsIcon()}
+              >
+                <Popup>
+                  <div className="p-3 text-[#141413] text-xs font-semibold space-y-1.5 min-w-[210px]">
+                    <div className="flex items-center gap-1.5 text-[#141413] font-mono text-[11px] font-bold border-b border-[#E5DFD9] pb-1">
+                      <span className={`w-2 h-2 rounded-full ${interactivePicker ? 'bg-[#CF4500]' : 'bg-[#10B981]'} animate-ping`}></span>
+                      <span>{interactivePicker ? 'SELECTED REGISTRATION POINT' : 'LIVE PATROL GPS FIX'}</span>
+                    </div>
+                    <p className="text-[#696969] font-mono text-[11px] leading-relaxed">
+                      Lat: <span className="text-[#141413] font-bold">{Number(displayLoc.lat).toFixed(5)}</span><br/>
+                      Lng: <span className="text-[#141413] font-bold">{Number(displayLoc.lng).toFixed(5)}</span>
                     </p>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-            <Circle
-              center={[validSelectedLoc.lat, validSelectedLoc.lng]}
-              radius={interactivePicker ? 60 : 250}
-              pathOptions={{
-                color: interactivePicker ? '#CF4500' : '#141413',
-                fillColor: interactivePicker ? '#CF4500' : '#141413',
-                fillOpacity: interactivePicker ? 0.12 : 0.08,
-                weight: 2,
-                dashArray: '4, 4'
-              }}
-            />
-          </>
-        )}
+                    {isLive && (
+                      <p className="text-[10px] text-[#10B981] font-sans font-semibold pt-0.5">
+                        ● Real-time Live Position Active
+                      </p>
+                    )}
+                    {interactivePicker && (
+                      <p className="text-[10px] text-[#CF4500] font-sans font-semibold pt-0.5">
+                        ✓ Location locked (Click anywhere to relocate)
+                      </p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+              <Circle
+                center={[displayLoc.lat, displayLoc.lng]}
+                radius={interactivePicker ? 60 : 150}
+                pathOptions={{
+                  color: interactivePicker ? '#CF4500' : '#10B981',
+                  fillColor: interactivePicker ? '#CF4500' : '#10B981',
+                  fillOpacity: interactivePicker ? 0.12 : 0.1,
+                  weight: 2,
+                  dashArray: '4, 4'
+                }}
+              />
+            </>
+          );
+        })()}
 
         {/* Police Station Headquarters Markers */}
         {defaultStations.map((st) => {
@@ -539,83 +756,69 @@ export const CameraMap = ({
                 />
               )}
 
-              {/* Camera Marker with Orientation Arrow */}
+              {/* Camera Marker with Orientation Arrow - Triggers CCTV Node Dossier */}
               <Marker
                 position={[cam.latitude, cam.longitude]}
                 icon={createCameraIcon(cam.cameraStatus, cam.verificationStatus, cam.directionAngle || 0, isSelected)}
                 eventHandlers={{
-                  click: () => onSelectCamera && onSelectCamera(cam)
+                  click: () => handleSelectCamera(cam)
                 }}
-              >
-                <Popup>
-                  <div className="p-3 text-[#141413] min-w-[250px] space-y-2">
-                    <div className="flex items-center justify-between border-b border-[#E5DFD9] pb-1.5">
-                      <span className="font-bold text-[#141413] font-mono text-xs">{cam.cameraCode}</span>
-                      <div className="flex gap-1.5">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          cam.cameraStatus === 'ACTIVE' 
-                            ? 'bg-[#EAF7EE] text-[#0A7334] border border-[#BDE7CA]' 
-                            : 'bg-[#FDF0EE] text-[#CF4500] border border-[#F8C6BC]'
-                        }`}>
-                          {cam.cameraStatus === 'ACTIVE' ? '● Online' : '● Offline'}
-                        </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          cam.verificationStatus === 'APPROVED' 
-                            ? 'bg-white text-[#141413] border border-[#D1CDC7]' 
-                            : 'bg-[#FEF6E9] text-[#B56708] border border-[#FADBA6]'
-                        }`}>
-                          {cam.verificationStatus === 'APPROVED' ? '✓ Verified' : '◷ Pending'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="font-bold text-sm text-[#141413] leading-snug">{cam.cameraName}</h4>
-                      <p className="text-xs text-[#696969] mt-0.5 flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-[#CF4500] shrink-0" />
-                        {cam.fullAddress || cam.area || 'Central District'}
-                      </p>
-                    </div>
-
-                    {/* Camera Specs info */}
-                    <div className="grid grid-cols-2 gap-1.5 p-2 rounded-[16px] bg-[#F3F0EE] border border-[#E5DFD9] text-xs">
-                      <div>
-                        <span className="text-[10px] text-[#696969] block">Orientation</span>
-                        <strong className="text-[#141413]">{cam.directionAngle || 0}° ({cam.cardinalDirection || 'EAST'})</strong>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-[#696969] block">Coverage</span>
-                        <strong className="text-[#141413]">{cam.coverageRadiusMeters || 80}m</strong>
-                      </div>
-                    </div>
-
-                    {/* Owner Info (Restricted for Surveyors) */}
-                    {isSurveyor ? (
-                      <div className="p-2 rounded-full bg-[#FEF6E9] border border-[#FADBA6] text-xs text-[#B56708] font-medium flex items-center justify-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5 text-[#B56708] shrink-0" />
-                        <span className="text-[10px]">Owner info restricted for surveyors</span>
-                      </div>
-                    ) : (
-                      <div className="p-2.5 rounded-[16px] bg-white border border-[#E5DFD9] text-xs space-y-0.5">
-                        <p className="font-semibold text-[#141413] flex items-center gap-1 text-[11px]">
-                          <User className="w-3 h-3 text-[#3860BE]" />
-                          Owner: {cam.ownerName || 'Metropolitan Police Dept'}
-                        </p>
-                        {cam.ownerContact && (
-                          <p className="text-[11px] text-[#696969] flex items-center gap-1 font-mono">
-                            <Phone className="w-3 h-3 text-[#CF4500]" />
-                            Contact: <strong>{cam.ownerContact}</strong>
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
+              />
             </React.Fragment>
           );
         })}
       </MapContainer>
+      )}
+
+      {/* 2D Tactical Controls & Live Location Option */}
+      {viewMode === '2d' && !interactivePicker && (
+        <div className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-[1000] pointer-events-auto flex items-center gap-1 sm:gap-1.5 bg-[#141413]/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 shadow-xl text-white text-xs max-w-[calc(100%-80px)] overflow-x-auto no-scrollbar">
+          <button
+            type="button"
+            onClick={handleResetNagpur}
+            title="Reset Map to Nagpur Hub"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 hover:bg-[#CF4500] hover:text-white transition-all active:scale-95 text-[10px] sm:text-[11px] font-medium shrink-0"
+          >
+            <RotateCcw className="w-2.5 h-2.5 text-[#F37338]" />
+            <span>HQ</span>
+          </button>
+
+          <div className="h-3 w-px bg-white/20 shrink-0"></div>
+
+          <button
+            type="button"
+            onClick={handleGetLiveLocation}
+            title="Acquire Live GPS Patrol Location"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 hover:bg-[#10B981] hover:text-white transition-all active:scale-95 text-[10px] sm:text-[11px] font-medium text-white/90 shrink-0"
+          >
+            <Navigation className={`w-2.5 h-2.5 ${isLocating ? 'animate-spin text-[#F37338]' : 'text-[#10B981]'}`} />
+            <span>{isLocating ? 'GPS...' : 'Live GPS'}</span>
+          </button>
+        </div>
+      )}
+
+      {/* 2D Tactical Surveillance Compass Overlay */}
+      {viewMode === '2d' && !interactivePicker && (
+        <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 z-[1000] pointer-events-auto scale-75 sm:scale-85 origin-bottom-right">
+          <MapCompass
+            bearing={0}
+            interactive={false}
+            title="Police Tactical Grid • True North (000° N)"
+          />
+        </div>
+      )}
+
+      {/* Universal CCTV Node Dossier Modal across all maps */}
+      {dossierCamera && (
+        <CameraDossierModal
+          camera={dossierCamera}
+          onClose={() => {
+            setDossierCamera(null);
+            if (onSelectCamera) onSelectCamera(null);
+          }}
+          isSurveyor={isSurveyor}
+        />
+      )}
     </div>
   );
 };

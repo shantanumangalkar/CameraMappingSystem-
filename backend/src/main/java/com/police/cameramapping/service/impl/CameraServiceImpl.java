@@ -44,6 +44,12 @@ public class CameraServiceImpl implements CameraService {
             throw new BadRequestException("Camera code '" + request.getCameraCode() + "' already exists!");
         }
 
+        if (request.getSerialNumber() != null && !request.getSerialNumber().trim().isEmpty()) {
+            if (cameraRepository.existsBySerialNumber(request.getSerialNumber().trim())) {
+                throw new BadRequestException("Camera with Serial Number '" + request.getSerialNumber().trim() + "' already exists in the system!");
+            }
+        }
+
         User user = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "username", currentUsername));
 
@@ -64,6 +70,7 @@ public class CameraServiceImpl implements CameraService {
 
         Camera camera = Camera.builder()
                 .cameraCode(request.getCameraCode())
+                .serialNumber(request.getSerialNumber())
                 .cameraName(request.getCameraName())
                 .cameraType(request.getCameraType())
                 .latitude(request.getLatitude())
@@ -107,6 +114,7 @@ public class CameraServiceImpl implements CameraService {
         Point point = geometryFactory.createPoint(new Coordinate(request.getLongitude(), request.getLatitude()));
 
         camera.setCameraName(request.getCameraName());
+        if (request.getSerialNumber() != null) camera.setSerialNumber(request.getSerialNumber());
         camera.setCameraType(request.getCameraType());
         camera.setLatitude(request.getLatitude());
         camera.setLongitude(request.getLongitude());
@@ -116,12 +124,114 @@ public class CameraServiceImpl implements CameraService {
         camera.setWard(request.getWard());
         camera.setZone(request.getZone());
         if (request.getDirectionAngle() != null) camera.setDirectionAngle(request.getDirectionAngle());
+        if (request.getFovAngle() != null) camera.setFovAngle(request.getFovAngle());
         if (request.getCoverageRadiusMeters() != null) camera.setCoverageRadiusMeters(request.getCoverageRadiusMeters());
         if (request.getImageUrl() != null) camera.setImageUrl(request.getImageUrl());
         
         camera.setUpdatedBy(currentUsername);
 
         return mapToResponse(cameraRepository.save(camera));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OwnerSummaryResponse lookupOwnerByContact(String contact) {
+        if (contact == null || contact.trim().isEmpty()) {
+            return OwnerSummaryResponse.builder()
+                    .ownerFound(false)
+                    .cameras(List.of())
+                    .build();
+        }
+
+        String raw = contact.trim();
+        String digitsOnly = raw.replaceAll("[^0-9]", "");
+        String searchDigits = digitsOnly.length() >= 10 ? digitsOnly.substring(digitsOnly.length() - 10) : digitsOnly;
+
+        List<Camera> matchedCameras = List.of();
+        if (!searchDigits.isEmpty()) {
+            matchedCameras = cameraRepository.searchByCleanContact(searchDigits);
+        }
+        if (matchedCameras.isEmpty()) {
+            matchedCameras = cameraRepository.findByOwnerContactAndIsDeletedFalse(raw);
+        }
+
+        if (matchedCameras.isEmpty()) {
+            return OwnerSummaryResponse.builder()
+                    .ownerFound(false)
+                    .ownerContact(raw)
+                    .maskedContact(maskPhoneNumber(raw))
+                    .totalCameras(0)
+                    .approvedCount(0)
+                    .pendingCount(0)
+                    .rejectedCount(0)
+                    .cameras(List.of())
+                    .build();
+        }
+
+        Camera primary = matchedCameras.get(0);
+        long approved = matchedCameras.stream().filter(c -> c.getVerificationStatus() == VerificationStatus.APPROVED).count();
+        long pending = matchedCameras.stream().filter(c -> c.getVerificationStatus() == VerificationStatus.PENDING).count();
+        long rejected = matchedCameras.stream().filter(c -> c.getVerificationStatus() == VerificationStatus.REJECTED).count();
+
+        List<CameraResponse> cameraResponses = matchedCameras.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        return OwnerSummaryResponse.builder()
+                .ownerFound(true)
+                .ownerName(primary.getOwnerName())
+                .ownerContact(primary.getOwnerContact())
+                .maskedContact(maskPhoneNumber(primary.getOwnerContact()))
+                .ownerType(primary.getOwnerType())
+                .totalCameras(matchedCameras.size())
+                .approvedCount(approved)
+                .pendingCount(pending)
+                .rejectedCount(rejected)
+                .cameras(cameraResponses)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DuplicateCheckResponse checkDuplicate(String serialNumber, String cameraCode) {
+        if (serialNumber != null && !serialNumber.trim().isEmpty()) {
+            var camOpt = cameraRepository.findBySerialNumber(serialNumber.trim());
+            if (camOpt.isPresent()) {
+                Camera cam = camOpt.get();
+                return DuplicateCheckResponse.builder()
+                        .duplicate(true)
+                        .duplicateField("serialNumber")
+                        .message("Camera with Serial Number '" + serialNumber.trim() + "' is already registered under " + (cam.getOwnerName() != null ? cam.getOwnerName() : "existing location") + " (" + cam.getCameraCode() + ").")
+                        .existingCamera(mapToResponse(cam))
+                        .build();
+            }
+        }
+
+        if (cameraCode != null && !cameraCode.trim().isEmpty()) {
+            var camOpt = cameraRepository.findByCameraCode(cameraCode.trim());
+            if (camOpt.isPresent()) {
+                Camera cam = camOpt.get();
+                return DuplicateCheckResponse.builder()
+                        .duplicate(true)
+                        .duplicateField("cameraCode")
+                        .message("Camera Code '" + cameraCode.trim() + "' already exists in the system (" + cam.getCameraName() + ").")
+                        .existingCamera(mapToResponse(cam))
+                        .build();
+            }
+        }
+
+        return DuplicateCheckResponse.builder()
+                .duplicate(false)
+                .message("No duplicate found. Serial Number and Camera Code are available.")
+                .build();
+    }
+
+    private String maskPhoneNumber(String phone) {
+        if (phone == null || phone.length() < 4) return "XXXX";
+        String digits = phone.replaceAll("[^0-9]", "");
+        if (digits.length() <= 3) return "XXXX";
+        String lastThree = digits.substring(digits.length() - 3);
+        return "XXXXXXX" + lastThree;
     }
 
     @Override
@@ -239,17 +349,10 @@ public class CameraServiceImpl implements CameraService {
         String ownerContact = camera.getOwnerContact();
         String ownerType = camera.getOwnerType();
 
-        try {
-            org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_SURVEY_PERSON"))) {
-                ownerName = "RESTRICTED (POLICE ACCESS ONLY)";
-                ownerContact = "RESTRICTED (POLICE ACCESS ONLY)";
-            }
-        } catch (Exception ignored) {}
-
         return CameraResponse.builder()
                 .id(camera.getId())
                 .cameraCode(camera.getCameraCode())
+                .serialNumber(camera.getSerialNumber())
                 .cameraName(camera.getCameraName())
                 .cameraType(camera.getCameraType())
                 .latitude(camera.getLatitude())

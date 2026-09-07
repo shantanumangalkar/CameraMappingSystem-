@@ -16,4 +16,6 @@ public interface CameraService {
     List<CameraResponse> getNearbyCameras(double latitude, double longitude, double radiusMeters);
     CameraResponse approveOrRejectCamera(Long id, CameraApprovalRequest request, String currentUsername);
     void deleteCamera(Long id, String currentUsername);
+    OwnerSummaryResponse lookupOwnerByContact(String contact);
+    DuplicateCheckResponse checkDuplicate(String serialNumber, String cameraCode);
 }

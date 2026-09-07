@@ -2,20 +2,14 @@
 # Multi-stage Dockerfile for Police Camera Mapping System (Spring Boot 3 + Java 21)
 # ==============================================================================
 
-# Stage 1: Build stage
-FROM eclipse-temurin:21-jdk-jammy AS builder
+# Stage 1: Build stage with pre-installed Maven & Java 21
+FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /workspace/app
 
-# Copy maven wrapper and pom.xml
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-
-# Ensure maven wrapper has executable permissions
-RUN chmod +x ./mvnw
-
-# Copy source code and build production jar
+# Copy pom.xml and source code to build production jar
+COPY pom.xml ./
 COPY src ./src
-RUN ./mvnw clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B
 
 # Stage 2: Minimal, secure runtime container
 FROM eclipse-temurin:21-jre-jammy
@@ -32,5 +26,5 @@ COPY --from=builder --chown=spring:spring /workspace/app/target/*.jar app.jar
 ENV PORT=8088
 EXPOSE 8088
 
-# Launch Spring Boot with memory optimization for container environments
+# Launch Spring Boot with container memory optimization
 ENTRYPOINT ["sh", "-c", "java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Dserver.port=${PORT} -jar app.jar"]

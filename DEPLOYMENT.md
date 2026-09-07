@@ -44,7 +44,7 @@ If you prefer configuring each service individually in the Render Dashboard:
 1. Click **New +** → **PostgreSQL**.
 2. Set **Name**: `cameramapping-db`
 3. Set **Database**: `cameramapping`
-4. Set **User**: `postgres`
+4. Set **User**: Leave default (Render auto-generates a secure user) or use `cameramapping_user` (do NOT use reserved `postgres`)
 5. Set **Region**: Choose closest to you (e.g., `Oregon (US West)` or `Frankfurt (EU)`).
 6. Set **Plan**: `Free`.
 7. Click **Create Database**.

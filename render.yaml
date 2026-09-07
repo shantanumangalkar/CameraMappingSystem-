@@ -10,7 +10,6 @@ databases:
   # ----------------------------------------------------------------------------
   - name: cameramapping-db
     databaseName: cameramapping
-    user: postgres
     plan: free
     region: oregon
 
@@ -54,8 +53,6 @@ services:
   - type: web
     name: cameramapping-web
     runtime: static
-    plan: free
-    region: oregon
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist

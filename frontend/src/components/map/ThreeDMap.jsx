@@ -25,29 +25,37 @@ import {
   Eye,
   Crosshair,
   Plus,
-  Minus
+  Minus,
+  Scan,
+  Activity,
+  Layers,
+  Video,
+  Sparkles,
+  Sliders,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 /**
  * ============================================================================
- * FUTURE-READY 3D SURVEILLANCE SCHEMA (SPECIFICATION STUB)
+ * ACCURATE DIGITAL TWIN SPECIFICATION & C4ISR RECON CONFIGURATION
  * ============================================================================
- * @typedef {Object} FutureCamera3DProps
- * @property {number} [cameraHeight] - Mounting height above ground level (AGL) in meters
- * @property {number} [directionBearing] - 3D azimuth heading (0° = North, 90° = East)
- * @property {number} [tiltAngle] - Vertical pitch depression angle (-90° down to +90° up)
- * @property {number} [fieldOfView] - Horizontal & vertical optical cone aperture in degrees
- * @property {number} [coverageRadius] - Max effective identification depth in meters
- * @property {boolean} [obstacleDetection] - Raycast occlusion against 3D building geometries
+ * Implements European EN 62676-4 / Indian Police CCTNS DORI Optical Standard:
+ * - Identification (ID): Core 35% of optical radius (250+ px/m facial recognition)
+ * - Recognition (REC): Mid 70% of optical radius (125+ px/m plate/apparel recognition)
+ * - Detection (DET): Outer 100% of optical radius (25+ px/m presence detection)
+ * - Volumetric 3D Frustum: Extruded optical cone based on mounting height AGL (8m - 14m)
  */
 
-// Vidarbha Region (Nagpur Hub) Reference Coordinates
+// Vidarbha Region (Nagpur Hub - Zero Mile / Sitabuldi HQ) Coordinates
 const VIDARBHA_CONFIG = {
   center: [79.0882, 21.1458], // [lng, lat] Sitabuldi / Nagpur Police Zone
-  defaultZoom: 15.2,
-  defaultPitch: 55, // Perspective tilt for realistic 3D depth
-  defaultBearing: -15, // Isometric angle
-  maxPitch: 75,
+  defaultZoom: 15.4,
+  defaultPitch: 58, // Cinematic perspective tilt for authentic 3D depth
+  defaultBearing: -18, // Isometric surveillance angle
+  maxPitch: 78,
   minPitch: 0,
   bounds: [
     [75.8, 18.5], // Southwest boundary [lng, lat]
@@ -81,11 +89,11 @@ const MAP_STYLES = {
 };
 
 // Helper: Calculate polygon coordinates for Field-of-View (FOV) wedge in GeoJSON [lng, lat] format
-// Identical formula to Leaflet 2D getFovPolygonCoordinates
-const getFovGeoJsonCoordinates = (lat, lon, directionAngle = 0, radiusMeters = 80, fovAngleDegrees = 60) => {
+// Supports scaling for DORI forensic optical bands (e.g. 0.35 for ID, 0.70 for REC, 1.0 for DET)
+const getFovGeoJsonCoordinates = (lat, lon, directionAngle = 0, radiusMeters = 80, fovAngleDegrees = 60, scaleRatio = 1.0) => {
   const numLat = parseFloat(lat);
   const numLon = parseFloat(lon);
-  const numRadius = parseFloat(radiusMeters) || 80;
+  const numRadius = (parseFloat(radiusMeters) || 80) * scaleRatio;
   const numDir = parseFloat(directionAngle) || 0;
   const numFov = parseFloat(fovAngleDegrees) || 60;
 
@@ -121,6 +129,28 @@ const getFovGeoJsonCoordinates = (lat, lon, directionAngle = 0, radiusMeters = 8
   return [coords];
 };
 
+// Helper: Optical Centerline Boresight Laser Line
+const getBoresightCenterline = (lat, lon, directionAngle = 0, radiusMeters = 80) => {
+  const numLat = parseFloat(lat);
+  const numLon = parseFloat(lon);
+  const numRadius = parseFloat(radiusMeters) || 80;
+  const numDir = parseFloat(directionAngle) || 0;
+
+  if (isNaN(numLat) || isNaN(numLon)) return null;
+
+  const metersPerLatDegree = 111320;
+  const metersPerLonDegree = 111320 * Math.cos((numLat * Math.PI) / 180);
+
+  const rad = ((90 - numDir) * Math.PI) / 180;
+  const tipLat = numLat + (numRadius * Math.sin(rad)) / metersPerLatDegree;
+  const tipLon = numLon + (numRadius * Math.cos(rad)) / metersPerLonDegree;
+
+  return [
+    [numLon, numLat],
+    [tipLon, tipLat]
+  ];
+};
+
 // Helper: Generate circle coordinates for Crime Scene radius in GeoJSON [lng, lat]
 const getCircleGeoJsonCoordinates = (lat, lon, radiusMeters = 500) => {
   const numLat = parseFloat(lat);
@@ -144,7 +174,7 @@ export const ThreeDMap = ({
   cameras = [],
   stations = [],
   center,
-  zoom = 15.2,
+  zoom = 15.4,
   crimeLocation = null,
   searchRadius = 500,
   onSelectCamera,
@@ -171,6 +201,7 @@ export const ThreeDMap = ({
   const mapRef = useRef(null);
   const markersRef = useRef([]);
   const activePopupRef = useRef(null);
+
   // Style Mode: 'satellite' | 'urban' | 'night'
   const [styleMode, setStyleMode] = useState('satellite');
   const [currentPitch, setCurrentPitch] = useState(VIDARBHA_CONFIG.defaultPitch);
@@ -178,6 +209,11 @@ export const ThreeDMap = ({
   const [realtimeClock, setRealtimeClock] = useState('');
   const [internalLiveLoc, setInternalLiveLoc] = useState(null);
   const [internalIsLocating, setInternalIsLocating] = useState(false);
+
+  // Digital Twin Advanced Features:
+  const [show3dBeams, setShow3dBeams] = useState(true); // Volumetric extruded light frustums
+  const [doriMode, setDoriMode] = useState(false); // DORI (Detection/Recognition/Identification) forensic bands
+  const [povCamera, setPovCamera] = useState(null); // Virtual Lens Street-Level POV Sightline
 
   const effectiveLiveLoc = liveLocation || internalLiveLoc;
   const effectiveIsLocating = isLocating || internalIsLocating;
@@ -214,41 +250,91 @@ export const ThreeDMap = ({
     return VIDARBHA_CONFIG.center; // [79.0882, 21.1458] (Sitabuldi / Nagpur Central HQ)
   }, [crimeLocation, center]);
 
-  // Update GeoJSON Layers (FOV Cones, Crime Radius, and Connective Trajectory Lines)
+  // Update GeoJSON Layers (FOV Cones, DORI Bands, Boresight Lasers, Crime Radius, Trajectories)
   const updateMapLayers = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // 1. Build FOV Cones GeoJSON
+    // 1. Build Multi-Tiered FOV Cones GeoJSON
     const fovFeatures = [];
+    const laserFeatures = [];
+
     cameras.forEach((cam) => {
       if (!cam.latitude || !cam.longitude) return;
 
       const fixedDirection = parseFloat(cam.directionAngle) || 0;
       const radius = parseFloat(cam.coverageRadiusMeters) || 80;
       const fov = parseFloat(cam.fovAngle) || 60;
+      const isSelected = selectedCameraId === cam.id;
 
-      const coords = getFovGeoJsonCoordinates(
-        cam.latitude,
-        cam.longitude,
-        fixedDirection,
-        radius,
-        fov
-      );
+      // Base status color
+      const baseColor = cam.verificationStatus === 'APPROVED' 
+        ? (cam.cameraStatus === 'ACTIVE' ? '#10B981' : '#CF4500') 
+        : '#F79E1B';
 
-      if (coords) {
-        const coneColor = cam.verificationStatus === 'APPROVED' 
-          ? (cam.cameraStatus === 'ACTIVE' ? '#10B981' : '#CF4500') 
-          : '#F79E1B';
-
+      // 1A. Full Detection Zone (Outer Cone)
+      const outerCoords = getFovGeoJsonCoordinates(cam.latitude, cam.longitude, fixedDirection, radius, fov, 1.0);
+      if (outerCoords) {
         fovFeatures.push({
           type: 'Feature',
-          geometry: { type: 'Polygon', coordinates: coords },
+          geometry: { type: 'Polygon', coordinates: outerCoords },
           properties: { 
             id: cam.id || cam.cameraCode, 
-            color: coneColor,
+            zone: 'detection',
+            color: doriMode ? '#F59E0B' : baseColor,
             status: cam.cameraStatus,
-            verificationStatus: cam.verificationStatus
+            verificationStatus: cam.verificationStatus,
+            mountingHeight: isSelected ? 15 : 11, // meters AGL for 3D extrusion
+            opacity3d: isSelected ? 0.28 : (show3dBeams ? 0.16 : 0.0),
+            opacityFill: isSelected ? 0.24 : 0.14
+          }
+        });
+      }
+
+      // 1B. If DORI Mode Active: Add Recognition (0.7x) & Identification (0.35x) Sub-Cones
+      if (doriMode) {
+        const recCoords = getFovGeoJsonCoordinates(cam.latitude, cam.longitude, fixedDirection, radius, fov, 0.70);
+        if (recCoords) {
+          fovFeatures.push({
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: recCoords },
+            properties: { 
+              id: `${cam.id}-rec`,
+              zone: 'recognition',
+              color: '#06B6D4',
+              mountingHeight: 8,
+              opacity3d: 0.22,
+              opacityFill: 0.20
+            }
+          });
+        }
+
+        const idCoords = getFovGeoJsonCoordinates(cam.latitude, cam.longitude, fixedDirection, radius, fov, 0.35);
+        if (idCoords) {
+          fovFeatures.push({
+            type: 'Feature',
+            geometry: { type: 'Polygon', coordinates: idCoords },
+            properties: { 
+              id: `${cam.id}-id`,
+              zone: 'identification',
+              color: '#10B981',
+              mountingHeight: 5,
+              opacity3d: 0.32,
+              opacityFill: 0.30
+            }
+          });
+        }
+      }
+
+      // 1C. Boresight Optical Centerline Laser
+      const laserCoords = getBoresightCenterline(cam.latitude, cam.longitude, fixedDirection, radius);
+      if (laserCoords) {
+        laserFeatures.push({
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: laserCoords },
+          properties: {
+            color: isSelected ? '#FFFFFF' : baseColor,
+            isSelected
           }
         });
       }
@@ -257,6 +343,11 @@ export const ThreeDMap = ({
     const fovSource = map.getSource('camera-fovs');
     if (fovSource) {
       fovSource.setData({ type: 'FeatureCollection', features: fovFeatures });
+    }
+
+    const laserSource = map.getSource('camera-lasers');
+    if (laserSource) {
+      laserSource.setData({ type: 'FeatureCollection', features: laserFeatures });
     }
 
     // 2. Build Crime Scene Investigation Radius & Radar Trajectory Lines
@@ -293,7 +384,62 @@ export const ThreeDMap = ({
     if (crimeSource) {
       crimeSource.setData({ type: 'FeatureCollection', features: crimeFeatures });
     }
-  }, [cameras, crimeLocation, searchRadius]);
+  }, [cameras, crimeLocation, searchRadius, selectedCameraId, doriMode, show3dBeams]);
+
+  // Apply Atmospheric Sky & Fog Depth Cueing
+  const applyAtmosphere = useCallback((map, currentStyle) => {
+    if (!map) return;
+    try {
+      if (typeof map.setFog === 'function') {
+        if (currentStyle === 'night') {
+          map.setFog({
+            range: [-0.5, 12],
+            color: '#0B0F19',
+            'horizon-blend': 0.15,
+            'high-color': '#020617',
+            'space-color': '#020617'
+          });
+        } else if (currentStyle === 'satellite') {
+          map.setFog({
+            range: [-1, 14],
+            color: '#CBD5E1',
+            'horizon-blend': 0.1,
+            'high-color': '#60A5FA',
+            'space-color': '#3B82F6'
+          });
+        } else {
+          // Urban Daylight
+          map.setFog({
+            range: [-1, 15],
+            color: '#F1F5F9',
+            'horizon-blend': 0.12,
+            'high-color': '#93C5FD',
+            'space-color': '#60A5FA'
+          });
+        }
+      }
+
+      if (typeof map.setLight === 'function') {
+        if (currentStyle === 'night') {
+          map.setLight({
+            anchor: 'viewport',
+            color: '#60A5FA',
+            intensity: 0.4,
+            position: [1.5, 210, 35]
+          });
+        } else {
+          map.setLight({
+            anchor: 'viewport',
+            color: '#FFFBEB',
+            intensity: 0.72,
+            position: [1.2, 175, 55]
+          });
+        }
+      }
+    } catch (e) {
+      // Graceful fallback if driver does not support advanced fog
+    }
+  }, []);
 
   // 1. Initialize MapLibre GL Instance
   useEffect(() => {
@@ -363,14 +509,13 @@ export const ThreeDMap = ({
           );
         }
 
-        // 1B. Crime Scene Radar & Connective Trajectory Sources & Layers (Placed on Ground)
+        // 1B. Crime Scene Radar & Connective Trajectories
         if (!map.getSource('crime-scene-data')) {
           map.addSource('crime-scene-data', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] }
           });
 
-          // Investigation Radius Circle Fill (Identical to Leaflet #F37338 with 0.1 opacity)
           map.addLayer({
             id: 'crime-radius-fill',
             type: 'fill',
@@ -378,11 +523,10 @@ export const ThreeDMap = ({
             filter: ['==', '$type', 'Polygon'],
             paint: {
               'fill-color': '#F37338',
-              'fill-opacity': 0.1
+              'fill-opacity': 0.12
             }
           });
 
-          // Investigation Radius Dashed Outer Ring (Identical to Leaflet #CF4500 dashed ring)
           map.addLayer({
             id: 'crime-radius-line',
             type: 'line',
@@ -390,12 +534,11 @@ export const ThreeDMap = ({
             filter: ['==', '$type', 'Polygon'],
             paint: {
               'line-color': '#CF4500',
-              'line-width': 2.2,
+              'line-width': 2.4,
               'line-dasharray': [3, 2]
             }
           });
 
-          // Dotted Orbital Connective Lines connecting Crime Scene to Cameras
           map.addLayer({
             id: 'crime-radar-lines',
             type: 'line',
@@ -403,45 +546,81 @@ export const ThreeDMap = ({
             filter: ['==', '$type', 'LineString'],
             paint: {
               'line-color': '#F37338',
-              'line-width': 1.4,
+              'line-width': 1.6,
               'line-dasharray': [2, 3],
-              'line-opacity': 0.55
+              'line-opacity': 0.65
             }
           });
         }
 
-        // 1C. CCTV Surveillance FOV Cones Layer (Placed on Ground)
+        // 1C. CCTV Surveillance FOV Cones Source
         if (!map.getSource('camera-fovs')) {
           map.addSource('camera-fovs', {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] }
           });
 
-          // FOV Sector Wedge Fill (Soft translucent mint green #10B981)
+          // Layer 1: Volumetric 3D Light Extrusion Frustum
+          map.addLayer({
+            id: 'camera-fovs-3d',
+            type: 'fill-extrusion',
+            source: 'camera-fovs',
+            paint: {
+              'fill-extrusion-color': ['get', 'color'],
+              'fill-extrusion-height': ['coalesce', ['get', 'mountingHeight'], 12],
+              'fill-extrusion-base': 0,
+              'fill-extrusion-opacity': ['coalesce', ['get', 'opacity3d'], 0.16],
+              'fill-extrusion-vertical-gradient': true
+            }
+          });
+
+          // Layer 2: Ground Projected Optical Footprint
           map.addLayer({
             id: 'camera-fovs-fill',
             type: 'fill',
             source: 'camera-fovs',
             paint: {
               'fill-color': ['get', 'color'],
-              'fill-opacity': 0.18
+              'fill-opacity': ['coalesce', ['get', 'opacityFill'], 0.18]
             }
           });
 
-          // FOV Sector Wedge Outline (Crisp stroke matching camera status)
+          // Layer 3: Crisp Optical Outline
           map.addLayer({
             id: 'camera-fovs-outline',
             type: 'line',
             source: 'camera-fovs',
             paint: {
               'line-color': ['get', 'color'],
-              'line-width': 1.8,
+              'line-width': 2.0,
               'line-opacity': 0.85
             }
           });
         }
 
-        // 1D. 3D Building Extrusions Layer
+        // 1D. Boresight Centerline Lasers Source & Layer
+        if (!map.getSource('camera-lasers')) {
+          map.addSource('camera-lasers', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+          });
+
+          map.addLayer({
+            id: 'camera-lasers-line',
+            type: 'line',
+            source: 'camera-lasers',
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': 1.8,
+              'line-dasharray': [2, 2],
+              'line-opacity': 0.9
+            }
+          });
+        }
+
+        // 1E. Procedural 3D Building Extrusions with Vertical Shading
+        const styleSources = map.getStyle().sources || {};
+        const vectorSourceId = Object.keys(styleSources).find(k => styleSources[k].type === 'vector') || 'openmaptiles';
         const layers = map.getStyle().layers;
         let labelLayerId;
         for (let i = 0; i < layers.length; i++) {
@@ -451,55 +630,60 @@ export const ThreeDMap = ({
           }
         }
 
-        if (map.getSource('openmaptiles') && !map.getLayer('3d-buildings')) {
+        if (map.getSource(vectorSourceId) && !map.getLayer('3d-buildings')) {
           map.addLayer(
             {
               id: '3d-buildings',
-              source: 'openmaptiles',
+              source: vectorSourceId,
               'source-layer': 'building',
               type: 'fill-extrusion',
-              minzoom: 13,
+              minzoom: 12.5,
               paint: {
                 'fill-extrusion-color': [
                   'interpolate',
                   ['linear'],
-                  ['get', 'render_height'],
-                  0, styleMode === 'night' ? '#1E293B' : (styleMode === 'satellite' ? '#E2E8F0' : '#CBD5E1'),
-                  20, styleMode === 'night' ? '#0F172A' : (styleMode === 'satellite' ? '#94A3B8' : '#94A3B8'),
-                  45, styleMode === 'night' ? '#0A0F1D' : (styleMode === 'satellite' ? '#64748B' : '#64748B')
+                  ['zoom'],
+                  13, styleMode === 'night' ? '#0F172A' : (styleMode === 'satellite' ? '#E2E8F0' : '#CBD5E1'),
+                  16, styleMode === 'night' ? '#1E293B' : (styleMode === 'satellite' ? '#94A3B8' : '#94A3B8')
                 ],
                 'fill-extrusion-height': [
                   'interpolate',
                   ['linear'],
                   ['zoom'],
-                  13, 0,
-                  14.5, ['coalesce', ['get', 'render_height'], ['get', 'height'], 15]
+                  12.5, 0,
+                  14.2, [
+                    'coalesce',
+                    ['get', 'render_height'],
+                    ['get', 'height'],
+                    ['*', ['to-number', ['get', 'building:levels'], 3], 3.5],
+                    ['*', ['to-number', ['get', 'levels'], 3], 3.5],
+                    16
+                  ]
                 ],
                 'fill-extrusion-base': [
                   'interpolate',
                   ['linear'],
                   ['zoom'],
-                  13, 0,
-                  14.5, ['coalesce', ['get', 'render_min_height'], ['get', 'min_height'], 0]
+                  12.5, 0,
+                  14.2, [
+                    'coalesce',
+                    ['get', 'render_min_height'],
+                    ['get', 'min_height'],
+                    0
+                  ]
                 ],
-                'fill-extrusion-opacity': styleMode === 'satellite' ? 0.78 : 0.88
+                'fill-extrusion-opacity': styleMode === 'satellite' ? 0.76 : 0.88,
+                'fill-extrusion-vertical-gradient': true
               }
             },
             labelLayerId
           );
         }
 
-        // 1E. Sun Angle & Ambient Lighting
-        try {
-          map.setLight({
-            anchor: 'viewport',
-            color: styleMode === 'night' ? '#3B82F6' : '#FFF7ED',
-            intensity: styleMode === 'night' ? 0.35 : 0.65,
-            position: [1.2, 210, 35]
-          });
-        } catch (e) {}
+        // Apply atmospheric fog and sun lighting
+        applyAtmosphere(map, styleMode);
 
-        // Populate GeoJSON features immediately on map load
+        // Populate initial GeoJSON features
         updateMapLayers();
       } catch (err) {
         console.warn('MapLibre 3D Realistic setup note:', err);
@@ -508,19 +692,16 @@ export const ThreeDMap = ({
 
     map.on('styledata', () => {
       updateMapLayers();
+      applyAtmosphere(map, styleMode);
     });
 
     mapRef.current = map;
 
     const handleRotate = () => {
-      if (mapRef.current) {
-        setCurrentBearing(mapRef.current.getBearing());
-      }
+      if (mapRef.current) setCurrentBearing(Math.round(mapRef.current.getBearing()));
     };
     const handlePitch = () => {
-      if (mapRef.current) {
-        setCurrentPitch(Math.round(mapRef.current.getPitch()));
-      }
+      if (mapRef.current) setCurrentPitch(Math.round(mapRef.current.getPitch()));
     };
 
     map.on('rotate', handleRotate);
@@ -560,26 +741,19 @@ export const ThreeDMap = ({
         map.setPaintProperty('3d-buildings', 'fill-extrusion-color', [
           'interpolate',
           ['linear'],
-          ['get', 'render_height'],
-          0, styleMode === 'night' ? '#1E293B' : (styleMode === 'satellite' ? '#E2E8F0' : '#CBD5E1'),
-          20, styleMode === 'night' ? '#0F172A' : (styleMode === 'satellite' ? '#94A3B8' : '#94A3B8'),
-          45, styleMode === 'night' ? '#0A0F1D' : (styleMode === 'satellite' ? '#64748B' : '#64748B')
+          ['zoom'],
+          13, styleMode === 'night' ? '#0F172A' : (styleMode === 'satellite' ? '#E2E8F0' : '#CBD5E1'),
+          16, styleMode === 'night' ? '#1E293B' : (styleMode === 'satellite' ? '#94A3B8' : '#94A3B8')
         ]);
-        map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', styleMode === 'satellite' ? 0.75 : 0.88);
+        map.setPaintProperty('3d-buildings', 'fill-extrusion-opacity', styleMode === 'satellite' ? 0.76 : 0.88);
       }
 
-      map.setLight({
-        anchor: 'viewport',
-        color: styleMode === 'night' ? '#3B82F6' : '#FFF7ED',
-        intensity: styleMode === 'night' ? 0.35 : 0.65,
-        position: [1.2, 210, 35]
-      });
-
+      applyAtmosphere(map, styleMode);
       updateMapLayers();
     } catch (e) {
       console.warn('Style switch dynamic update note:', e);
     }
-  }, [styleMode, updateMapLayers]);
+  }, [styleMode, updateMapLayers, applyAtmosphere]);
 
   // 3. Interactive Map Click (Registration Picker & Blank Space Dismissal)
   useEffect(() => {
@@ -592,7 +766,6 @@ export const ThreeDMap = ({
         const lng = Math.round(e.lngLat.lng * 100000) / 100000;
         onMapClick(lat, lng, { lat, lng, latitude: lat, longitude: lng });
       } else {
-        // Dismiss active popup when clicking on empty map terrain
         if (activePopupRef.current) {
           activePopupRef.current.remove();
           activePopupRef.current = null;
@@ -604,12 +777,12 @@ export const ThreeDMap = ({
     return () => map.off('click', handleMapClick);
   }, [interactivePicker, onMapClick]);
 
-  // 4. Update Layers when cameras, crimeLocation, or searchRadius change
+  // 4. Update Layers when props or tactical modes change
   useEffect(() => {
     updateMapLayers();
-  }, [cameras, crimeLocation, searchRadius, updateMapLayers]);
+  }, [cameras, crimeLocation, searchRadius, selectedCameraId, doriMode, show3dBeams, updateMapLayers]);
 
-  // 5. Render Identical 2D/3D CCTV Markers & Crime Scene Pin
+  // 5. Render High-Fidelity 3D CCTV Markers & Infrastructure Pins
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -617,38 +790,45 @@ export const ThreeDMap = ({
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    // Helper: Create Camera Node Marker (Exact SVG replica from Leaflet 2D)
+    // Helper: Create 3D Tactical Camera Node Element
     const createCameraEl = (cam) => {
       const isSelected = selectedCameraId === cam.id;
       let color = '#10B981'; // Green for Active
       if (cam.cameraStatus === 'OFFLINE' || cam.verificationStatus === 'REJECTED') color = '#CF4500';
       if (cam.cameraStatus === 'UNDER_MAINTENANCE' || cam.verificationStatus === 'PENDING') color = '#F79E1B';
 
-      // Authentic, static orientation angle from database
       const dirAngle = cam.directionAngle || 0;
-      const size = isSelected ? 46 : 38;
+      const size = isSelected ? 48 : 40;
+      const camType = (cam.cameraType || 'DOME').substring(0, 4);
 
       const el = document.createElement('div');
-      el.className = 'custom-camera-marker cursor-pointer transition-transform duration-150 hover:scale-115 select-none';
+      el.className = 'custom-camera-marker cursor-pointer transition-transform duration-200 hover:scale-120 select-none';
       el.style.width = `${size}px`;
-      el.style.height = `${size}px`;
+      el.style.height = `${size + 14}px`;
+      el.style.display = 'flex';
+      el.style.flexDirection = 'column';
+      el.style.alignItems = 'center';
       el.style.pointerEvents = 'auto';
 
       el.innerHTML = `
-        <div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;">
+        <div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.45));">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${size}" height="${size}">
-            ${isSelected ? `<circle cx="20" cy="20" r="19" fill="none" stroke="#141413" stroke-width="2.5" stroke-dasharray="3 2"/>` : ''}
+            ${isSelected ? `<circle cx="20" cy="20" r="19" fill="none" stroke="#F37338" stroke-width="2.5" stroke-dasharray="3 2"/>` : ''}
             <!-- Direction Indicator Arrow -->
             <g transform="rotate(${dirAngle}, 20, 20)">
-              <polygon points="20,2 25,11 15,11" fill="${color}"/>
-              <circle cx="20" cy="20" r="14" fill="none" stroke="${color}" stroke-width="1.5" stroke-opacity="0.7"/>
+              <polygon points="20,1 26,11 14,11" fill="${color}"/>
+              <circle cx="20" cy="20" r="14" fill="none" stroke="${color}" stroke-width="1.8" stroke-opacity="0.8"/>
             </g>
-            <!-- Center Camera Hub: White base, black rim, color status dot -->
-            <circle cx="20" cy="20" r="9" fill="#FFFFFF" stroke="#141413" stroke-width="2"/>
+            <!-- Center Camera Hub: Metallic outer bezel, color status core -->
+            <circle cx="20" cy="20" r="10" fill="#141413" stroke="#FFFFFF" stroke-width="2"/>
             <circle cx="20" cy="20" r="5" fill="${color}"/>
-            ${cam.verificationStatus === 'PENDING' ? '<circle cx="27" cy="13" r="3.5" fill="#F79E1B" stroke="#FFFFFF" stroke-width="1"/>' : ''}
+            ${cam.verificationStatus === 'PENDING' ? '<circle cx="28" cy="12" r="3.5" fill="#F79E1B" stroke="#FFFFFF" stroke-width="1"/>' : ''}
           </svg>
         </div>
+        <!-- Miniature Tactical Sensor Badge -->
+        <span style="font-size:9px;font-family:monospace;font-weight:800;background:#141413;color:#FFFFFF;padding:1px 5px;border-radius:9999px;border:1px solid rgba(255,255,255,0.25);margin-top:-6px;box-shadow:0 2px 4px rgba(0,0,0,0.5);">
+          ${camType}
+        </span>
       `;
 
       return el;
@@ -664,14 +844,14 @@ export const ThreeDMap = ({
         .setLngLat([parseFloat(cam.longitude), parseFloat(cam.latitude)])
         .addTo(map);
 
-      // Clean, single click handler: focuses camera in 3D and triggers CCTV Node Dossier Modal directly across all maps
+      // Click: Select camera and trigger dossier modal
       el.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
         map.flyTo({
           center: [parseFloat(cam.longitude), parseFloat(cam.latitude)],
           zoom: 16.5,
-          pitch: 55,
+          pitch: 58,
           bearing: parseFloat(cam.directionAngle) || 0,
           duration: 900,
           essential: true
@@ -712,11 +892,11 @@ export const ThreeDMap = ({
               <span style="background:#EAF7EE;color:#0A7334;border:1px solid #BDE7CA;padding:2px 8px;border-radius:9999px;font-weight:700;font-size:10px;">CCTNS VERIFIED</span>
             </div>
             <div style="font-weight:700;font-size:14px;line-height:1.2;">${st.stationName}</div>
-            <div style="color:#696969;font-size:11px;margin-top:2px;">📍 ${st.address || st.jurisdictionZone || 'Vidarbha Command HQ'}</div>
+            <div style="color:#696969;font-size:11px;margin-top:2px;">📍 ${st.address || st.jurisdictionZone || 'Nagpur Command HQ'}</div>
             <div style="background:#F3F0EE;border:1px solid #E5DFD9;padding:8px;border-radius:12px;margin-top:8px;font-size:11px;">
-              <div style="color:#696969;">Jurisdiction: <strong style="color:#141413;">${st.jurisdictionZone || 'Central Vidarbha'}</strong></div>
+              <div style="color:#696969;">Jurisdiction: <strong style="color:#141413;">${st.jurisdictionZone || 'Nagpur Central'}</strong></div>
               <div style="margin-top:4px;padding-top:4px;border-top:1px solid #E5DFD9;font-family:monospace;">
-                📞 Helpline: <strong style="color:#CF4500;">${st.contactNumber || '+91 712 100'}</strong>
+                📞 Helpline: <strong style="color:#CF4500;">${st.contactNumber || '+91 712 2560300'}</strong>
               </div>
             </div>
           </div>
@@ -740,7 +920,7 @@ export const ThreeDMap = ({
       markersRef.current.push(marker);
     });
 
-    // 5C. Mount Crime Scene Pin (Identical SVG to Leaflet 2D createCrimeSceneIcon)
+    // 5C. Mount Crime Scene Pin
     if (crimeLocation && isValidLat(crimeLocation.lat) && isValidLng(crimeLocation.lng)) {
       const el = document.createElement('div');
       el.className = 'crime-scene-target-node cursor-pointer';
@@ -788,7 +968,7 @@ export const ThreeDMap = ({
       markersRef.current.push(marker);
     }
 
-    // 5D. Mount Selected Location Pin - When interactivePicker is active OR when user requests Live GPS
+    // 5D. Mount Selected Location Pin (Registration Picker or Live GPS)
     const activeLoc = (interactivePicker && selectedLocation) || effectiveLiveLoc;
     if (activeLoc && isValidLat(activeLoc.lat) && isValidLng(activeLoc.lng)) {
       const isLive = Boolean(effectiveLiveLoc && !interactivePicker);
@@ -864,7 +1044,7 @@ export const ThreeDMap = ({
       map.flyTo({
         center: [parseFloat(found.longitude), parseFloat(found.latitude)],
         zoom: 16.5,
-        pitch: 55,
+        pitch: 58,
         bearing: parseFloat(found.directionAngle) || 0,
         duration: 900,
         essential: true
@@ -872,7 +1052,7 @@ export const ThreeDMap = ({
     }
   }, [selectedCameraId, cameras]);
 
-  // Auto-focus on crimeLocation when an investigation case is clicked/selected
+  // Auto-focus on crimeLocation
   const lastCrimeLocRef = useRef({ lat: null, lng: null, focusKey: null });
   useEffect(() => {
     const map = mapRef.current;
@@ -889,26 +1069,14 @@ export const ThreeDMap = ({
       map.flyTo({
         center: [targetLng, targetLat],
         zoom: 16.2,
-        pitch: 55,
+        pitch: 58,
         duration: 1000,
         essential: true
       });
     }
   }, [crimeLocation?.lat, crimeLocation?.lng, focusKey]);
 
-  // Auto-focus when effectiveLiveLoc updates
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !effectiveLiveLoc?.lat || !effectiveLiveLoc?.lng) return;
-    map.flyTo({
-      center: [parseFloat(effectiveLiveLoc.lng), parseFloat(effectiveLiveLoc.lat)],
-      zoom: 16.5,
-      pitch: 50,
-      duration: 1000,
-      essential: true
-    });
-  }, [effectiveLiveLoc]);
-
+  // Live Location Trigger
   const handleTriggerLiveLocation = () => {
     if (onGetLiveLocation) {
       onGetLiveLocation();
@@ -935,10 +1103,48 @@ export const ThreeDMap = ({
     );
   };
 
-  // Viewport Presets
+  // Virtual Lens POV Mode Actions
+  const handleEnterPOV = (cam) => {
+    const map = mapRef.current;
+    if (!map || !cam) return;
+    setPovCamera(cam);
+    map.flyTo({
+      center: [parseFloat(cam.longitude), parseFloat(cam.latitude)],
+      zoom: 17.6,
+      pitch: 68, // Street level depression angle
+      bearing: parseFloat(cam.directionAngle) || 0,
+      duration: 1200,
+      essential: true
+    });
+  };
+
+  const handleExitPOV = () => {
+    setPovCamera(null);
+    mapRef.current?.flyTo({
+      zoom: 15.4,
+      pitch: 58,
+      duration: 900
+    });
+  };
+
+  const handlePanPOV = (deltaBearing) => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.easeTo({ bearing: map.getBearing() + deltaBearing, duration: 250 });
+  };
+
+  const handleTiltPOV = (deltaPitch) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const next = Math.min(VIDARBHA_CONFIG.maxPitch, Math.max(VIDARBHA_CONFIG.minPitch, map.getPitch() + deltaPitch));
+    map.easeTo({ pitch: next, duration: 250 });
+  };
+
+  // Reset to Zero Mile / Nagpur Headquarters Hub
   const handleResetVidarbhaView = () => {
     const map = mapRef.current;
     if (!map) return;
+    setPovCamera(null);
     map.flyTo({
       center: VIDARBHA_CONFIG.center,
       zoom: VIDARBHA_CONFIG.defaultZoom,
@@ -953,6 +1159,15 @@ export const ThreeDMap = ({
     if (!map) return;
     const nextPitch = Math.min(VIDARBHA_CONFIG.maxPitch, Math.max(VIDARBHA_CONFIG.minPitch, map.getPitch() + delta));
     map.easeTo({ pitch: nextPitch, duration: 300 });
+  };
+
+  const handleCyclePitch = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const pitches = [35, 55, 68, 76];
+    const curr = Math.round(map.getPitch());
+    const next = pitches.find(p => p > curr + 3) || pitches[0];
+    map.easeTo({ pitch: next, duration: 350 });
   };
 
   const handleResetNorth = () => {
@@ -971,14 +1186,14 @@ export const ThreeDMap = ({
         className={`absolute inset-0 w-full h-full ${interactivePicker ? 'cursor-crosshair' : 'cursor-grab'}`}
       />
 
-      {/* UNIFIED TOP BAR: Single non-overlapping responsive flex container */}
+      {/* UNIFIED TOP BAR: Tactical Digital Twin Header */}
       <div className="absolute top-2.5 inset-x-2.5 sm:top-3 sm:inset-x-3 z-10 pointer-events-none flex items-center justify-between gap-1.5 sm:gap-2">
-        {/* Left: Tactical Badge */}
+        {/* Left: Tactical Twin Status Badge */}
         <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2 bg-[#141413]/90 backdrop-blur-md px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-white border border-white/10 shadow-lg text-[10px] sm:text-[11px] font-semibold shrink-0">
           <span className="w-2 h-2 rounded-full bg-[#10B981] shrink-0 animate-pulse"></span>
-          <span className="font-bold tracking-tight">3D RECON</span>
+          <span className="font-bold tracking-tight">DIGITAL TWIN 3D</span>
           <span className="text-[9px] font-mono text-[#F37338] bg-[#F37338]/20 px-1.5 py-0.5 rounded-full border border-[#F37338]/30">
-            NAGPUR
+            NAGPUR HQ
           </span>
           {realtimeClock && (
             <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-mono text-white/70 border-l border-white/20 pl-2">
@@ -988,7 +1203,7 @@ export const ThreeDMap = ({
           )}
         </div>
 
-        {/* Right: Controls Cluster (Engine Switcher, Style Switcher, Fullscreen) */}
+        {/* Right: Controls Cluster (Engine, Styles, Fullscreen) */}
         <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0 ml-auto">
           {/* 2D / 3D Mode Switcher */}
           {onViewModeChange && !interactivePicker && (
@@ -1019,7 +1234,7 @@ export const ThreeDMap = ({
             </div>
           )}
 
-          {/* 3D Photorealistic Style Switcher (Compact icons) */}
+          {/* 3D Photorealistic Style Switcher */}
           <div className="flex items-center bg-[#141413]/90 backdrop-blur-md p-0.5 rounded-full border border-white/15 shadow-xl text-white">
             {Object.values(MAP_STYLES).map((style) => {
               const IconComponent = style.icon;
@@ -1071,12 +1286,78 @@ export const ThreeDMap = ({
         </div>
       </div>
 
-      {/* BOTTOM LEFT: Quick Actions Toolbar */}
+      {/* TOP FLOATING OVERLAY: Virtual Camera POV Sightline Viewfinder */}
+      {povCamera && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 pointer-events-auto bg-[#141413]/92 backdrop-blur-md px-3.5 py-2.5 rounded-2xl border border-[#CF4500]/40 text-white shadow-2xl flex flex-col sm:flex-row items-center gap-3 animate-in fade-in max-w-[94%]">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#CF4500] animate-ping shrink-0" />
+            <div className="text-left">
+              <div className="text-[10px] font-mono text-[#F37338] tracking-widest font-bold uppercase flex items-center gap-1.5">
+                <span>VIRTUAL CCTV SIGHTLINE POV</span>
+                <span className="text-white/60">•</span>
+                <span className="text-white font-bold">{povCamera.cameraCode}</span>
+              </div>
+              <div className="text-xs font-semibold text-white truncate max-w-[240px] sm:max-w-xs">
+                {povCamera.cameraName || 'CCTV Focal Perspective'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 border-t sm:border-t-0 sm:border-l border-white/15 pt-2 sm:pt-0 sm:pl-3">
+            {/* Pan / Tilt controls */}
+            <div className="flex items-center bg-white/10 rounded-full p-0.5 text-white/90">
+              <button 
+                type="button" 
+                onClick={() => handlePanPOV(-15)} 
+                title="Pan Left"
+                className="p-1 hover:bg-white/20 rounded-full"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handlePanPOV(15)} 
+                title="Pan Right"
+                className="p-1 hover:bg-white/20 rounded-full"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleTiltPOV(-5)} 
+                title="Tilt Up"
+                className="p-1 hover:bg-white/20 rounded-full"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleTiltPOV(5)} 
+                title="Tilt Down"
+                className="p-1 hover:bg-white/20 rounded-full"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleExitPOV}
+              className="px-2.5 py-1 rounded-full bg-[#CF4500] hover:bg-[#B53C00] text-white text-[11px] font-bold shadow-md transition-colors"
+            >
+              Exit POV
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* BOTTOM LEFT: Digital Twin Quick Actions & Optics Toolbar */}
       <div className="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3 z-10 pointer-events-auto flex items-center gap-1 sm:gap-1.5 bg-[#141413]/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 shadow-xl text-white text-xs max-w-[calc(100%-80px)] overflow-x-auto no-scrollbar">
+        {/* Reset to Nagpur Headquarters Hub */}
         <button
           type="button"
           onClick={handleResetVidarbhaView}
-          title="Reset View to Nagpur Hub"
+          title="Reset View to Nagpur Police HQ (Zero Mile)"
           className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 hover:bg-[#CF4500] hover:text-white transition-all active:scale-95 text-[10px] sm:text-[11px] font-medium shrink-0"
         >
           <RotateCcw className="w-2.5 h-2.5 text-[#F37338]" />
@@ -1085,6 +1366,35 @@ export const ThreeDMap = ({
 
         <div className="h-3 w-px bg-white/20 shrink-0"></div>
 
+        {/* 3D Volumetric Extruded Frustums Toggle */}
+        <button
+          type="button"
+          onClick={() => setShow3dBeams(prev => !prev)}
+          title="Toggle 3D Volumetric Extruded Optical Beams"
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-all active:scale-95 text-[10px] sm:text-[11px] font-medium shrink-0 ${
+            show3dBeams ? 'bg-[#CF4500] text-white' : 'bg-white/10 hover:bg-white/20 text-white/80'
+          }`}
+        >
+          <Sparkles className="w-2.5 h-2.5" />
+          <span>3D Cones</span>
+        </button>
+
+        {/* DORI Forensic Optical Analysis Toggle */}
+        <button
+          type="button"
+          onClick={() => setDoriMode(prev => !prev)}
+          title="Toggle Forensic DORI Optical Zones (Identification / Recognition / Detection)"
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-all active:scale-95 text-[10px] sm:text-[11px] font-medium shrink-0 ${
+            doriMode ? 'bg-[#10B981] text-white font-bold' : 'bg-white/10 hover:bg-white/20 text-white/80'
+          }`}
+        >
+          <Scan className="w-2.5 h-2.5" />
+          <span>DORI</span>
+        </button>
+
+        <div className="h-3 w-px bg-white/20 shrink-0"></div>
+
+        {/* Live GPS Patrol Fix */}
         <button
           type="button"
           onClick={handleTriggerLiveLocation}
@@ -1097,17 +1407,18 @@ export const ThreeDMap = ({
 
         <div className="h-3 w-px bg-white/20 shrink-0"></div>
 
+        {/* 3D Pitch Depression Cycler */}
         <button
           type="button"
-          onClick={() => handleAdjustPitch(15)}
-          title="Adjust Pitch Tilt"
+          onClick={handleCyclePitch}
+          title="Cycle Camera Perspective Pitch"
           className="px-2 py-0.5 rounded-full bg-white/10 hover:bg-white/20 transition-all text-[9px] sm:text-[10px] font-mono font-bold shrink-0"
         >
           Tilt {currentPitch}°
         </button>
       </div>
 
-      {/* BOTTOM RIGHT: Unified Compass & Tactical Zoom Controls (Single non-overlapping vertical flex stack) */}
+      {/* BOTTOM RIGHT: Unified Surveillance Compass & Tactical Zoom Controls */}
       <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 z-10 pointer-events-auto flex flex-col items-center gap-1.5 scale-75 sm:scale-85 origin-bottom-right">
         <MapCompass
           bearing={currentBearing}

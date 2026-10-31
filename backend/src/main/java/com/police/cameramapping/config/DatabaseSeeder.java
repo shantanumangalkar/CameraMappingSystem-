@@ -15,6 +15,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
 
 @Component
@@ -36,17 +38,23 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
 
     @Override
+    @Transactional
     public void run(String... args) {
-        seedRoles();
-        PoliceStation station = seedPoliceStation();
-        User admin = seedAdminUser(station);
-        User officer = seedOfficerUser(station);
-        User surveyor = seedSurveyorUser(station);
-        if (cameraRepository.count() < 50) {
-            nagpurCameraSeederService.reseed50NagpurCameras();
-        }
-        if (investigationCaseRepository.count() < 8) {
-            nagpurInvestigationSeederService.reseedNagpurInvestigations();
+        try {
+            seedRoles();
+            PoliceStation station = seedPoliceStation();
+            User admin = seedAdminUser(station);
+            User officer = seedOfficerUser(station);
+            User surveyor = seedSurveyorUser(station);
+            if (cameraRepository.count() < 50) {
+                nagpurCameraSeederService.reseed50NagpurCameras();
+            }
+            if (investigationCaseRepository.count() < 8) {
+                nagpurInvestigationSeederService.reseedNagpurInvestigations();
+            }
+            logger.info("Database seeding successfully initialized with Nagpur Police Commissionerate HQ.");
+        } catch (Exception e) {
+            logger.error("Error during database seeding: {}", e.getMessage(), e);
         }
     }
 
@@ -175,11 +183,10 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private User seedAdminUser(PoliceStation station) {
         return userRepository.findByUsername("admin").map(u -> {
-            if (u.getPoliceStation() == null || !"PS-NGP-01".equals(u.getPoliceStation().getStationCode())) {
-                u.setPoliceStation(station);
-                return userRepository.save(u);
-            }
-            return u;
+            u.setPoliceStation(station);
+            u.setPassword(passwordEncoder.encode("admin123"));
+            u.setActive(true);
+            return userRepository.save(u);
         }).orElseGet(() -> {
             Role adminRole = roleRepository.findByName(RoleEnum.ROLE_ADMIN).orElseThrow();
             User admin = User.builder()
@@ -200,11 +207,10 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private User seedOfficerUser(PoliceStation station) {
         return userRepository.findByUsername("officer1").map(u -> {
-            if (u.getPoliceStation() == null || !"PS-NGP-01".equals(u.getPoliceStation().getStationCode())) {
-                u.setPoliceStation(station);
-                return userRepository.save(u);
-            }
-            return u;
+            u.setPoliceStation(station);
+            u.setPassword(passwordEncoder.encode("officer123"));
+            u.setActive(true);
+            return userRepository.save(u);
         }).orElseGet(() -> {
             Role officerRole = roleRepository.findByName(RoleEnum.ROLE_POLICE_OFFICER).orElseThrow();
             User officer = User.builder()
@@ -225,11 +231,10 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     private User seedSurveyorUser(PoliceStation station) {
         return userRepository.findByUsername("surveyor1").map(u -> {
-            if (u.getPoliceStation() == null || !"PS-NGP-01".equals(u.getPoliceStation().getStationCode())) {
-                u.setPoliceStation(station);
-                return userRepository.save(u);
-            }
-            return u;
+            u.setPoliceStation(station);
+            u.setPassword(passwordEncoder.encode("surveyor123"));
+            u.setActive(true);
+            return userRepository.save(u);
         }).orElseGet(() -> {
             Role surveyorRole = roleRepository.findByName(RoleEnum.ROLE_SURVEY_PERSON).orElseThrow();
             User surveyor = User.builder()

@@ -147,7 +147,7 @@ export const InvestigationView = () => {
         searchRadiusMeters: parseFloat(form.searchRadiusMeters),
         description: form.description,
         assignedOfficerName: user?.fullName || 'Inspector Police Officer',
-        policeStationName: user?.policeStationName || 'Central District HQ',
+        policeStationName: user?.policeStationName || 'Nagpur Police Commissionerate HQ',
         status: 'ACTIVE',
         createdBy: user?.username
       };
@@ -253,7 +253,7 @@ export const InvestigationView = () => {
   const fetchedCasesList = allCasesData || [];
   
   const caseList = fetchedCasesList.length > 0 ? fetchedCasesList : [
-    { id: 1, caseNumber: 'CAS-8492', firNumber: 'FIR-2026-104', title: 'Commercial Plaza Burglary Incident', crimeType: 'BURGLARY', crimeLocationName: 'North Market Junction', latitude: 21.1458, longitude: 79.0882, searchRadiusMeters: 500, assignedOfficerName: 'Inspector Rajesh Kumar', policeStationName: 'Central District HQ', status: 'ACTIVE', description: 'Reported robbery near main market square.' },
+    { id: 1, caseNumber: 'CAS-8492', firNumber: 'FIR-2026-104', title: 'Commercial Plaza Burglary Incident', crimeType: 'BURGLARY', crimeLocationName: 'North Market Junction', latitude: 21.1458, longitude: 79.0882, searchRadiusMeters: 500, assignedOfficerName: 'Inspector Rajesh Kumar', policeStationName: 'Nagpur Police Commissionerate HQ', status: 'ACTIVE', description: 'Reported robbery near main market square.' },
     { id: 2, caseNumber: 'CAS-9104', firNumber: 'FIR-2026-089', title: 'Vehicle Theft at Metro Gate 3', crimeType: 'VEHICLE_THEFT', crimeLocationName: 'Metro Sector 4', latitude: 21.1500, longitude: 79.0920, searchRadiusMeters: 800, assignedOfficerName: 'Sub-Inspector Vikram Singh', policeStationName: 'West Sector Station', status: 'IN_PROGRESS', description: 'Vehicle stolen between 2 PM and 4 PM.' }
   ];
 
@@ -357,7 +357,7 @@ export const InvestigationView = () => {
                   </span>
                   <span className="flex items-center gap-1 font-medium bg-white px-2.5 py-1 rounded-full border border-[#E5DFD9]">
                     <Building2 className="w-3.5 h-3.5 text-[#3860BE]" />
-                    {activeCase.policeStationName || 'Central District HQ'}
+                    {activeCase.policeStationName || 'Nagpur Police Commissionerate HQ'}
                   </span>
                   <span className="flex items-center gap-1 font-medium bg-white px-2.5 py-1 rounded-full border border-[#E5DFD9]">
                     <User className="w-3.5 h-3.5 text-[#141413]" />
@@ -772,7 +772,7 @@ export const InvestigationView = () => {
                   <div className="p-3 rounded-[20px] bg-[#F3F0EE] text-[11px] space-y-1">
                     <div className="flex items-center gap-1.5 text-[#141413]">
                       <Building2 className="w-3.5 h-3.5 text-[#3860BE] shrink-0" />
-                      <span className="truncate">{c.policeStationName || 'Station HQ'}</span>
+                      <span className="truncate">{c.policeStationName || 'Nagpur Police HQ'}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[#696969]">
                       <User className="w-3.5 h-3.5 text-[#141413] shrink-0" />
@@ -835,7 +835,7 @@ export const InvestigationView = () => {
                           {c.crimeLocationName}
                         </span>
                       </td>
-                      <td className="p-4 font-medium text-[#141413]">{c.policeStationName || 'Station HQ'}</td>
+                      <td className="p-4 font-medium text-[#141413]">{c.policeStationName || 'Nagpur Police HQ'}</td>
                       <td className="p-4 text-[#696969]">{c.assignedOfficerName || 'Officer Assigned'}</td>
                       <td className="p-4">
                         <span className={

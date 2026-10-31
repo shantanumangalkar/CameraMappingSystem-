@@ -63,26 +63,31 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private PoliceStation seedPoliceStation() {
-        PoliceStation primaryStation = policeStationRepository.findByStationCode("PS-DEL-01")
+        PoliceStation primaryStation = policeStationRepository.findByStationCode("PS-NGP-01")
                 .orElseGet(() -> {
-                    Point location = geometryFactory.createPoint(new Coordinate(77.2410, 28.6280));
+                    Point location = geometryFactory.createPoint(new Coordinate(79.0801, 21.1524));
                     PoliceStation station = PoliceStation.builder()
-                            .stationCode("PS-DEL-01")
-                            .stationName("Delhi Police Central Headquarters (ITO)")
-                            .address("Jai Singh Road, ITO, New Delhi")
-                            .contactNumber("+91-11-23490000")
-                            .officerInCharge("Commissioner of Police")
-                            .jurisdictionArea("Central Delhi & NDMC Zone")
-                            .latitude(28.6280)
-                            .longitude(77.2410)
+                            .stationCode("PS-NGP-01")
+                            .stationName("Nagpur Police Commissionerate Headquarters")
+                            .address("Civil Lines, Nagpur, Maharashtra - 440001")
+                            .contactNumber("+91-712-2560300")
+                            .officerInCharge("Commissioner of Police, Nagpur City")
+                            .jurisdictionArea("Nagpur Police Commissionerate Zone")
+                            .latitude(21.1524)
+                            .longitude(79.0801)
+                            .cctnsStationId("CCTNS-PS-NGP-01")
+                            .stateBureau("Maharashtra State Police")
+                            .district("Nagpur Urban")
+                            .isCctnsVerified(true)
                             .locationGeom(location)
                             .build();
-                    logger.info("Seeded Police Station: Delhi Police HQ");
+                    logger.info("Seeded Police Station: Nagpur Police Headquarters");
                     return policeStationRepository.save(station);
                 });
 
         // Seed Pan-India Metropolitan & District Local Police Stations (Thanasa) - CCTNS Verified
         // Delhi NCR
+        seedStationIfAbsent("PS-DEL-01", "Delhi Police Central Headquarters (ITO)", "Jai Singh Road, ITO, New Delhi", "+91-11-23490000", "Central Delhi & NDMC Zone", 28.6280, 77.2410, "Delhi Police Bureau", "New Delhi");
         seedStationIfAbsent("PS-DEL-02", "Connaught Place Police Station", "Parliament Street, CP, New Delhi", "+91-11-23340000", "Central Delhi", 28.6328, 77.2197, "Delhi Police Bureau", "New Delhi");
         seedStationIfAbsent("PS-DEL-03", "Chanakyapuri Police Station", "Nyaya Marg, Chanakyapuri, New Delhi", "+91-11-24100000", "Diplomatic Enclave", 28.5985, 77.1906, "Delhi Police Bureau", "New Delhi");
         seedStationIfAbsent("PS-DEL-04", "Karol Bagh Police Station", "Pusa Road, Karol Bagh, New Delhi", "+91-11-25720000", "Central Delhi West", 28.6517, 77.1906, "Delhi Police Bureau", "Central Delhi");
@@ -169,7 +174,13 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private User seedAdminUser(PoliceStation station) {
-        return userRepository.findByUsername("admin").orElseGet(() -> {
+        return userRepository.findByUsername("admin").map(u -> {
+            if (u.getPoliceStation() == null || !"PS-NGP-01".equals(u.getPoliceStation().getStationCode())) {
+                u.setPoliceStation(station);
+                return userRepository.save(u);
+            }
+            return u;
+        }).orElseGet(() -> {
             Role adminRole = roleRepository.findByName(RoleEnum.ROLE_ADMIN).orElseThrow();
             User admin = User.builder()
                     .username("admin")
@@ -188,7 +199,13 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private User seedOfficerUser(PoliceStation station) {
-        return userRepository.findByUsername("officer1").orElseGet(() -> {
+        return userRepository.findByUsername("officer1").map(u -> {
+            if (u.getPoliceStation() == null || !"PS-NGP-01".equals(u.getPoliceStation().getStationCode())) {
+                u.setPoliceStation(station);
+                return userRepository.save(u);
+            }
+            return u;
+        }).orElseGet(() -> {
             Role officerRole = roleRepository.findByName(RoleEnum.ROLE_POLICE_OFFICER).orElseThrow();
             User officer = User.builder()
                     .username("officer1")
@@ -207,7 +224,13 @@ public class DatabaseSeeder implements CommandLineRunner {
     }
 
     private User seedSurveyorUser(PoliceStation station) {
-        return userRepository.findByUsername("surveyor1").orElseGet(() -> {
+        return userRepository.findByUsername("surveyor1").map(u -> {
+            if (u.getPoliceStation() == null || !"PS-NGP-01".equals(u.getPoliceStation().getStationCode())) {
+                u.setPoliceStation(station);
+                return userRepository.save(u);
+            }
+            return u;
+        }).orElseGet(() -> {
             Role surveyorRole = roleRepository.findByName(RoleEnum.ROLE_SURVEY_PERSON).orElseThrow();
             User surveyor = User.builder()
                     .username("surveyor1")

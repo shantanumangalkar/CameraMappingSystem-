@@ -6,7 +6,17 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved) return null;
+    try {
+      const parsed = JSON.parse(saved);
+      if (!parsed.policeStationName || parsed.policeStationName.includes('Delhi') || parsed.policeStationName.includes('Central Metropolitan') || parsed.policeStationName.includes('Central District')) {
+        parsed.policeStationName = 'Nagpur Police Commissionerate Headquarters';
+        localStorage.setItem('user', JSON.stringify(parsed));
+      }
+      return parsed;
+    } catch {
+      return null;
+    }
   });
   const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [loading, setLoading] = useState(false);

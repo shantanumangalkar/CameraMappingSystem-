@@ -60,7 +60,7 @@ export const Navbar = ({ onToggleMobileSidebar, isMobileSidebarOpen }) => {
             <p className="hidden md:flex text-[11px] text-[#696969] items-center gap-1 font-medium truncate mt-0.5">
               <Building2 className="w-3 h-3 text-[#CF4500] shrink-0" />
               <span className="truncate max-w-xs md:max-w-md">
-                {user?.policeStationName || 'Central Metropolitan Police Command HQ'}
+                {(user?.policeStationName && !user.policeStationName.includes('Delhi') && !user.policeStationName.includes('Central Metropolitan') && !user.policeStationName.includes('Central District')) ? user.policeStationName : 'Nagpur Police Commissionerate Headquarters'}
               </span>
             </p>
           </div>

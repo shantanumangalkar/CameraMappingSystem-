@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Lock, User, AlertCircle, ArrowRight, ShieldCheck, Target, Video } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
   const [username, setUsername] = useState('admin');
@@ -99,21 +98,6 @@ export const Login = () => {
               A centralized platform connecting citizens, administrators, and police through verified CCTV camera locations and intelligent map-based access.
             </p>
 
-            {/* Feature Telemetry Pills */}
-            <div className="flex flex-wrap items-center gap-2.5 pt-1">
-              <div className="px-3 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-1.5 shadow-sm">
-                <Target className="w-3.5 h-3.5 text-[#F37338]" />
-                <span>GIS Radar</span>
-              </div>
-              <div className="px-3 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white flex items-center gap-1.5 shadow-sm">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
-                <span>Encrypted CCTNS</span>
-              </div>
-              <div className="hidden sm:flex px-3 py-1 rounded-full bg-black/65 backdrop-blur-md border border-white/15 text-xs text-white items-center gap-1.5 shadow-sm">
-                <Video className="w-3.5 h-3.5 text-[#3860BE]" />
-                <span>Live CCTV Feeds</span>
-              </div>
-            </div>
           </div>
         </div>
 

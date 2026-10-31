@@ -100,7 +100,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
             </div>
             <p className="text-[11px] text-[#D1CDC7] flex items-center gap-1.5 leading-snug">
               <Building2 className="w-3.5 h-3.5 text-[#CF4500] shrink-0" />
-              <span>{user?.policeStationName || 'Central District Command Station'}</span>
+              <span>{user?.policeStationName || 'Nagpur Police Commissionerate HQ'}</span>
             </p>
           </div>
         </div>
@@ -157,7 +157,7 @@ export const Sidebar = ({ isMobileOpen, onCloseMobile }) => {
             <span className="text-[9px] font-mono text-[#F37338] bg-[#F37338]/10 px-1.5 py-0.5 rounded border border-[#F37338]/20">HQ</span>
           </div>
           <p className="font-semibold text-white text-xs leading-snug break-words">
-            {user?.policeStationName || 'Central District Command Station'}
+            {user?.policeStationName || 'Nagpur Police Commissionerate HQ'}
           </p>
           <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-[#8C8882] font-mono">
             <span>Badge: @{user?.username || 'officer1'}</span>

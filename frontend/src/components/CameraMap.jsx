@@ -433,7 +433,7 @@ export const CameraMap = ({
     { id: 105, stationCode: 'PS-NGP-01', stationName: 'Nagpur Police Commissionerate HQ', latitude: 21.1524, longitude: 79.0801, address: 'Civil Lines, Nagpur', contactNumber: '+91-712-2560300', jurisdictionZone: 'Nagpur City HQ' },
     { id: 106, stationCode: 'PS-NGP-02', stationName: 'Sitabuldi Police Station', latitude: 21.1458, longitude: 79.0882, address: 'Main Road, Sitabuldi, Nagpur', contactNumber: '+91-712-2522000', jurisdictionZone: 'Central Nagpur' },
     { id: 107, stationCode: 'PS-AMR-01', stationName: 'Amravati City Police Commissionerate', latitude: 20.9320, longitude: 77.7523, address: 'Camp, Amravati', contactNumber: '+91-721-2551000', jurisdictionZone: 'Amravati Precinct' },
-    { id: 101, stationCode: 'PS-DEL-01', stationName: 'Delhi Police Central HQ (ITO)', latitude: 28.6280, longitude: 77.2410, address: 'ITO, New Delhi', contactNumber: '+91-11-23490000', jurisdictionZone: 'Central Delhi' }
+    { id: 108, stationCode: 'PS-NGP-03', stationName: 'Sadar Police Station', latitude: 21.1620, longitude: 79.0780, address: 'Sadar Bazaar, Nagpur', contactNumber: '+91-712-2531000', jurisdictionZone: 'North Nagpur' }
   ];
 
   const isValidLat = (val) => typeof val === 'number' && !isNaN(val) && val >= -90 && val <= 90;

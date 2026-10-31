@@ -61,6 +61,11 @@ public class DataSourceConfig {
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
 
+        // Required for compatibility with connection poolers (PgBouncer, Supabase port 6543, Neon transaction mode)
+        // Disables server-side named prepared statements to prevent "ERROR: prepared statement S_1 already exists"
+        config.addDataSourceProperty("prepareThreshold", "0");
+        config.addDataSourceProperty("preparedStatementCacheQueries", "0");
+
         log.info("Configured PostgreSQL DataSource with URL: {}", sanitizeUrlForLogging(dbUrl));
 
         HikariDataSource ds = new HikariDataSource(config);
@@ -80,7 +85,8 @@ public class DataSourceConfig {
             try {
                 URI uri = new URI(rawDatabaseUrl);
                 int port = uri.getPort() > 0 ? uri.getPort() : 5432;
-                return "jdbc:postgresql://" + uri.getHost() + ":" + port + uri.getPath();
+                String query = (uri.getQuery() != null && !uri.getQuery().isBlank()) ? "?" + uri.getQuery() : "";
+                return "jdbc:postgresql://" + uri.getHost() + ":" + port + uri.getPath() + query;
             } catch (Exception e) {
                 log.warn("Failed to parse DATABASE_URL as URI, using as-is: {}", e.getMessage());
                 return rawDatabaseUrl.startsWith("jdbc:") ? rawDatabaseUrl : "jdbc:" + rawDatabaseUrl;

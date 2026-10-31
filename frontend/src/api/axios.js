@@ -14,6 +14,8 @@ const api = axios.create({
   },
 });
 
+console.info('[Police Camera System] Active API Base URL:', getBaseURL());
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -28,6 +30,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    if (!error.response) {
+      console.error(
+        '[Police Camera System] Network Error reaching backend API.',
+        '\nTarget endpoint:', error.config?.url,
+        '\nConfigured baseURL:', getBaseURL(),
+        '\nPlease check: 1) Is VITE_API_URL set in Render? 2) Is the Render backend awake/live? 3) Does CORS allow this origin?'
+      );
+    }
     if (error.response && error.response.status === 401 && !error.config?.url?.includes('/auth/login')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');

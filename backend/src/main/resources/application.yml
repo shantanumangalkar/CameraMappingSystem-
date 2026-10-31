@@ -52,7 +52,7 @@ app:
     key: ${SUPABASE_KEY:}
     bucket: ${SUPABASE_BUCKET:camera-media}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://*.onrender.com,http://localhost:3000,http://127.0.0.1:3000}
   seeder:
     enabled: ${APP_SEEDER_ENABLED:true}
 
